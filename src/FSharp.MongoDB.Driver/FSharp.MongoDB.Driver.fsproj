@@ -62,13 +62,6 @@
     <Compile Include="MongoClient.fs" />
     <None Include="paket.references" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\FSharp.MongoDB.Bson\FSharp.MongoDB.Bson.fsproj">
-      <Name>FSharp.MongoDB.Bson</Name>
-      <Project>{3C580B01-B163-4E2D-BD4A-AFA062EF813E}</Project>
-      <Private>True</Private>
-    </ProjectReference>
-  </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
   </PropertyGroup>
