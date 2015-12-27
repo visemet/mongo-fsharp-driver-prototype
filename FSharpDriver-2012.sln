@@ -8,9 +8,6 @@ EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FSharp.MongoDB.Bson.Tests", "tests\FSharp.MongoDB.Bson.Tests\FSharp.MongoDB.Bson.Tests.fsproj", "{3E2AFA32-3B88-4354-A01D-31513FA9EEF9}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FSharp.MongoDB.Driver.Tests", "tests\FSharp.MongoDB.Driver.Tests\FSharp.MongoDB.Driver.Tests.fsproj", "{45DDDBC9-5807-43ED-9CDF-A67067C50969}"
-	ProjectSection(ProjectDependencies) = postProject
-		{F2F775C4-7C17-4E02-A122-123514FC15C6} = {F2F775C4-7C17-4E02-A122-123514FC15C6}
-	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{886191B2-2B52-48F4-BE8F-998ED5370554}"
 	ProjectSection(SolutionItems) = preProject

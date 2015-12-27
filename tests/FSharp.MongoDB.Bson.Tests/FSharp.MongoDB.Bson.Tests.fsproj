@@ -57,18 +57,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="FSharpValueSerializationTests.fs">
-      <Link>FSharpValueSerializationTests.fs</Link>
-    </Compile>
-    <Compile Include="FSharpListSerializationTests.fs">
-      <Link>FSharpListSerializationTests.fs</Link>
-    </Compile>
-    <Compile Include="FSharpMapSerializationTests.fs">
-      <Link>FSharpMapSerializationTests.fs</Link>
-    </Compile>
-    <Compile Include="FSharpSetSerializationTests.fs">
-      <Link>FSharpSetSerializationTests.fs</Link>
-    </Compile>
+    <Compile Include="FSharpValueSerializationTests.fs" />
+    <Compile Include="FSharpListSerializationTests.fs" />
+    <Compile Include="FSharpMapSerializationTests.fs" />
+    <Compile Include="FSharpSetSerializationTests.fs" />
     <None Include="packages.config" />
     <None Include="app.config" />
   </ItemGroup>

@@ -49,36 +49,16 @@
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Serialization/Conventions/RecordTypeConvention.fs">
-      <Link>Serialization/Conventions/RecordTypeConvention.fs</Link>
-    </Compile>
-    <Compile Include="Serialization/Conventions/DiscriminatedUnionConvention.fs">
-      <Link>Serialization/Conventions/DiscriminatedUnionConvention.fs</Link>
-    </Compile>
-    <Compile Include="Serialization/Conventions/OptionTypeConvention.fs">
-      <Link>Serialization/Conventions/OptionTypeConvention.fs</Link>
-    </Compile>
-    <Compile Include="Serialization/Serializers/DiscriminatedUnionSerializer.fs">
-      <Link>Serialization/Serializers/DiscriminatedUnionSerializer.fs</Link>
-    </Compile>
-    <Compile Include="Serialization/Serializers/FSharpListSerializer.fs">
-      <Link>Serialization/Serializers/FSharpListSerializer.fs</Link>
-    </Compile>
-    <Compile Include="Serialization/Serializers/FSharpMapSerializer.fs">
-      <Link>Serialization/Serializers/FSharpMapSerializer.fs</Link>
-    </Compile>
-    <Compile Include="Serialization/Serializers/FSharpSetSerializer.fs">
-      <Link>Serialization/Serializers/FSharpSetSerializer.fs</Link>
-    </Compile>
-    <Compile Include="Serialization/Serializers/OptionTypeSerializer.fs">
-      <Link>Serialization/Serializers/OptionTypeSerializer.fs</Link>
-    </Compile>
-    <Compile Include="Serialization/FSharpTypeConventions.fs">
-      <Link>Serialization/FSharpTypeConventions.fs</Link>
-    </Compile>
-    <Compile Include="Serialization/FSharpValueSerializers.fs">
-      <Link>Serialization/FSharpValueSerializers.fs</Link>
-    </Compile>
+    <Compile Include="Serialization\Conventions\RecordTypeConvention.fs" />
+    <Compile Include="Serialization\Conventions\DiscriminatedUnionConvention.fs" />
+    <Compile Include="Serialization\Conventions\OptionTypeConvention.fs" />
+    <Compile Include="Serialization\Serializers\DiscriminatedUnionSerializer.fs" />
+    <Compile Include="Serialization\Serializers\FSharpListSerializer.fs" />
+    <Compile Include="Serialization\Serializers\FSharpMapSerializer.fs" />
+    <Compile Include="Serialization\Serializers\FSharpSetSerializer.fs" />
+    <Compile Include="Serialization\Serializers\OptionTypeSerializer.fs" />
+    <Compile Include="Serialization\FSharpTypeConventions.fs" />
+    <Compile Include="Serialization\FSharpValueSerializers.fs" />
     <None Include="packages.config" />
   </ItemGroup>
   <PropertyGroup>

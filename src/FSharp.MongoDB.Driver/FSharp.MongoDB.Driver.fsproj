@@ -53,51 +53,21 @@
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Properties/AssemblyInfo.fs">
-      <Link>Properties/AssemblyInfo.fs</Link>
-    </Compile>
-    <Compile Include="Quotations/HelperPatterns.fs">
-      <Link>Quotations/HelperPatterns.fs</Link>
-    </Compile>
-    <Compile Include="Quotations/QueryPatterns.fs">
-      <Link>Quotations/QueryPatterns.fs</Link>
-    </Compile>
-    <Compile Include="Quotations/UpdatePatterns.fs">
-      <Link>Quotations/UpdatePatterns.fs</Link>
-    </Compile>
-    <Compile Include="MongoOperationSettings.fs">
-      <Link>MongoOperationSettings.fs</Link>
-    </Compile>
-    <Compile Include="MongoBackboneSettings.fs">
-      <Link>MongoBackboneSettings.fs</Link>
-    </Compile>
-    <Compile Include="MongoBackbone.fs">
-      <Link>MongoBackbone.fs</Link>
-    </Compile>
-    <Compile Include="MongoScopeOptions.fs">
-      <Link>MongoScopeOptions.fs</Link>
-    </Compile>
-    <Compile Include="MongoScope.fs">
-      <Link>MongoScope.fs</Link>
-    </Compile>
-    <Compile Include="MongoCollection.fs">
-      <Link>MongoCollection.fs</Link>
-    </Compile>
-    <Compile Include="FluentMongo.fs">
-      <Link>FluentMongo.fs</Link>
-    </Compile>
-    <Compile Include="MongoDatabase.fs">
-      <Link>MongoDatabase.fs</Link>
-    </Compile>
-    <Compile Include="MongoClient.fs">
-      <Link>MongoClient.fs</Link>
-    </Compile>
-    <Compile Include="QuotableMongo.fs">
-      <Link>QuotableMongo.fs</Link>
-    </Compile>
-    <Compile Include="ExpressibleMongo.fs">
-      <Link>ExpressibleMongo.fs</Link>
-    </Compile>
+    <Compile Include="Properties\AssemblyInfo.fs" />
+    <Compile Include="Quotations\HelperPatterns.fs" />
+    <Compile Include="Quotations\QueryPatterns.fs" />
+    <Compile Include="Quotations\UpdatePatterns.fs" />
+    <Compile Include="MongoOperationSettings.fs" />
+    <Compile Include="MongoBackboneSettings.fs" />
+    <Compile Include="MongoBackbone.fs" />
+    <Compile Include="MongoScopeOptions.fs" />
+    <Compile Include="MongoScope.fs" />
+    <Compile Include="MongoCollection.fs" />
+    <Compile Include="FluentMongo.fs" />
+    <Compile Include="MongoDatabase.fs" />
+    <Compile Include="MongoClient.fs" />
+    <Compile Include="QuotableMongo.fs" />
+    <Compile Include="ExpressibleMongo.fs" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

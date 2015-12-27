@@ -61,18 +61,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ExpressibleMongoTests.fs">
-      <Link>ExpressibleMongoTests.fs</Link>
-    </Compile>
-    <Compile Include="MongoBackboneTests.fs">
-      <Link>MongoBackboneTests.fs</Link>
-    </Compile>
-    <Compile Include="QuotableMongoTests.fs">
-      <Link>QuotableMongoTests.fs</Link>
-    </Compile>
-    <Compile Include="TypedQuotableMongoTests.fs">
-      <Link>TypedQuotableMongoTests.fs</Link>
-    </Compile>
+    <Compile Include="ExpressibleMongoTests.fs" />
+    <Compile Include="MongoBackboneTests.fs" />
+    <Compile Include="QuotableMongoTests.fs" />
+    <Compile Include="TypedQuotableMongoTests.fs" />
     <None Include="packages.config" />
     <None Include="app.config" />
   </ItemGroup>
