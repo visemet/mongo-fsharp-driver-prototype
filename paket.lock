@@ -2,9 +2,17 @@ FRAMEWORK: NET45
 NUGET
   remote: https://www.nuget.org/api/v2
   specs:
+    FAKE (4.11.3)
+    FSharp.Compiler.Service (1.4.2.3)
+    FSharp.Formatting (2.12.1)
+      FSharp.Compiler.Service (>= 1.4.2 < 1.5.0)
+      FSharpVSPowerTools.Core (>= 2.2.0 < 2.3.0)
+    FSharpVSPowerTools.Core (2.2.0)
+      FSharp.Compiler.Service (>= 1.4.2.0)
     MongoDB.Bson (2.0.0)
     MongoDB.Driver.Core (2.0.0)
       MongoDB.Bson (>= 2.0.0)
     NUnit (2.6.2)
     NUnit.Runners (2.6.2)
+    SourceLink.Fake (1.1.0)
     Unquote (2.2.2)
