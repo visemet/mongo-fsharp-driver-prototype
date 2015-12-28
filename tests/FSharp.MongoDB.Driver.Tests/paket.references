@@ -1,0 +1,5 @@
+MongoDB.Bson
+MongoDB.Driver.Core
+NUnit
+NUnit.Runners
+Unquote

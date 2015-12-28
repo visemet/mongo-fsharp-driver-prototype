@@ -1,0 +1,10 @@
+FRAMEWORK: NET45
+NUGET
+  remote: https://www.nuget.org/api/v2
+  specs:
+    MongoDB.Bson (2.0.0)
+    MongoDB.Driver.Core (2.0.0)
+      MongoDB.Bson (>= 2.0.0)
+    NUnit (2.6.2)
+    NUnit.Runners (2.6.2)
+    Unquote (2.2.2)

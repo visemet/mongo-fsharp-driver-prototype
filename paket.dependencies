@@ -1,0 +1,10 @@
+framework: net45
+source https://www.nuget.org/api/v2
+
+nuget MongoDB.Bson 2.0.0
+nuget MongoDB.Driver.Core 2.0.0
+
+// for executing tests
+nuget NUnit 2.6.2
+nuget NUnit.Runners 2.6.2
+nuget Unquote 2.2.2
