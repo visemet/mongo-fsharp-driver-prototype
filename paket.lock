@@ -4,6 +4,7 @@ NUGET
   specs:
     FAKE (4.11.3)
     FSharp.Compiler.Service (1.4.2.3)
+    FSharp.Control.AsyncSeq (2.0.3)
     FSharp.Formatting (2.12.1)
       FSharp.Compiler.Service (>= 1.4.2 < 1.5.0)
       FSharpVSPowerTools.Core (>= 2.2.0 < 2.3.0)
