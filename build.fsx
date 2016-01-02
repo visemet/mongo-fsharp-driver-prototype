@@ -113,7 +113,8 @@ let runTestTask name =
                 OutputFile = "TestResults.xml" })
     taskName ==> "RunTests" |> ignore
 
-[ "FSharp.MongoDB.Bson.Tests" ]
+[ "FSharp.MongoDB.Bson.Tests"
+  "FSharp.MongoDB.Driver.Tests" ]
 |> List.iter runTestTask
 
 // -----------------------------------------------------------------------------
