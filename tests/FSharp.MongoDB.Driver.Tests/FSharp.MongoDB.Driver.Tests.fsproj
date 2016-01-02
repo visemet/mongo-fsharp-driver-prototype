@@ -48,6 +48,8 @@
     <Compile Include="CollectionReadOperationsTests.fs" />
     <Compile Include="DatabaseReadOperationsTests.fs" />
     <Compile Include="DatabaseWriteOperationsTests.fs" />
+    <Compile Include="ClientReadOperationsTests.fs" />
+    <Compile Include="ClientWriteOperationsTests.fs" />
     <None Include="paket.references" />
     <None Include="app.config" />
   </ItemGroup>
