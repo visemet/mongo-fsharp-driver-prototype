@@ -44,20 +44,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.fs" />
-    <Compile Include="Quotations\HelperPatterns.fs" />
-    <Compile Include="Quotations\QueryPatterns.fs" />
-    <Compile Include="Quotations\UpdatePatterns.fs" />
-    <Compile Include="MongoOperationSettings.fs" />
-    <Compile Include="MongoBackboneSettings.fs" />
-    <Compile Include="MongoBackbone.fs" />
-    <Compile Include="MongoScopeOptions.fs" />
-    <Compile Include="MongoScope.fs" />
-    <Compile Include="MongoCollection.fs" />
-    <Compile Include="FluentMongo.fs" />
-    <Compile Include="MongoDatabase.fs" />
-    <Compile Include="MongoClient.fs" />
-    <Compile Include="QuotableMongo.fs" />
-    <Compile Include="ExpressibleMongo.fs" />
+    <Compile Include="MongoSettings.fsi" />
+    <Compile Include="MongoSettings.fs" />
     <None Include="paket.references" />
   </ItemGroup>
   <ItemGroup>
