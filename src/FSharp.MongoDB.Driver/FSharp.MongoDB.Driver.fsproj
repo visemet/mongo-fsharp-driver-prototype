@@ -57,6 +57,7 @@
     <Compile Include="IOperationExecutor.fs" />
     <Compile Include="OperationExecutor.fs" />
     <Compile Include="MongoCollection.fs" />
+    <Compile Include="MongoDatabase.fs" />
     <None Include="paket.references" />
   </ItemGroup>
   <ItemGroup>

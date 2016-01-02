@@ -15,42 +15,159 @@
 
 namespace FSharp.MongoDB.Driver
 
+open System
+open System.Text
+open System.Threading
+
 open MongoDB.Bson
+open MongoDB.Bson.Serialization
 
+open MongoDB.Driver
 open MongoDB.Driver.Core
+open MongoDB.Driver.Core.Bindings
+open MongoDB.Driver.Core.Operations
+open MongoDB.Driver.Core.WireProtocol.Messages.Encoders
 
-[<Interface>]
-/// Represents a database of the cluster.
-type IMongoDatabase =
-    /// <summary>Drops the specified database.</summary>
-    abstract member Drop : unit -> CommandResult
+open FSharp.MongoDB.Driver.Operations
+open FSharp.MongoDB.Driver.Operations.DatabaseReadOptions
+open FSharp.MongoDB.Driver.Operations.DatabaseWriteOptions
 
-    /// <summary>Returns the specified collection.</summary>
-    /// <param name="cltcn">The collection name.</param>
-    /// <returns>Returns </returns>
-    abstract member GetCollection : string -> IMongoCollection<BsonDocument>
+type internal NonOptionalMongoDatabaseSettings =
+    { GuidRepresentation : GuidRepresentation
+      ReadEncoding : UTF8Encoding
+      ReadPreference : ReadPreference
+      WriteConcern : WriteConcern
+      WriteEncoding : UTF8Encoding }
 
-    /// <summary>
-    /// Returns the specified collection, parametrized by the generic type.
-    /// </summary>
-    /// <param name="cltcn">The collection name.</param>
-    abstract member GetCollection<'DocType> : string -> IMongoCollection<'DocType>
+type internal MongoDatabase(client:IMongoClient,
+                            databaseNamespace:DatabaseNamespace,
+                            settings:NonOptionalMongoDatabaseSettings,
+                            operationExecutor:IOperationExecutor) =
 
-type internal MongoDatabase =
+    let databaseSettings = settings
 
-    val private backbone : MongoBackbone
-    val private db : string
+    let messageEncoderSettings =
+        let add name value (messageEncoderSettings:MessageEncoderSettings) =
+            messageEncoderSettings.Add(name, value)
 
-    internal new (backbone, db) = {
-        backbone = backbone
-        db = db
-    }
+        MessageEncoderSettings()
+        |> add MessageEncoderSettingsName.GuidRepresentation settings.GuidRepresentation
+        |> add MessageEncoderSettingsName.ReadEncoding settings.ReadEncoding
+        |> add MessageEncoderSettingsName.WriteEncoding settings.WriteEncoding
 
     interface IMongoDatabase with
-        member x.Drop () = x.backbone.DropDatabase x.db
 
-        member x.GetCollection clctn =
-            (x :> IMongoDatabase).GetCollection<BsonDocument> clctn
+        member __.Client = client
 
-        member x.GetCollection<'DocType> clctn =
-            MongoCollection<'DocType>(x.backbone, x.db, clctn) :> IMongoCollection<'DocType>
+        member __.DatabaseNamespace = databaseNamespace
+
+        member db.GetCollection<'Document> (name, ?settings) =
+            let collectionOverrides = defaultArg settings MongoCollectionSettings.None
+            let collectionSettings : NonOptionalMongoCollectionSettings =
+                { AssignIdOnInsert = defaultArg collectionOverrides.AssignIdOnInsert true
+                  GuidRepresentation = (defaultArg collectionOverrides.GuidRepresentation
+                                                   databaseSettings.GuidRepresentation)
+                  ReadEncoding = (defaultArg collectionOverrides.ReadEncoding
+                                             databaseSettings.ReadEncoding)
+                  ReadPreference = (defaultArg collectionOverrides.ReadPreference
+                                               databaseSettings.ReadPreference)
+                  WriteConcern = (defaultArg collectionOverrides.WriteConcern
+                                             databaseSettings.WriteConcern)
+                  WriteEncoding = (defaultArg collectionOverrides.WriteEncoding
+                                              databaseSettings.WriteEncoding) }
+
+            let collectionNamespace = CollectionNamespace(databaseNamespace, name)
+            MongoCollection<'Document>(db,
+                                       collectionNamespace,
+                                       collectionSettings,
+                                       operationExecutor)
+            :> IMongoCollection<'Document>
+
+        member __.AsyncCreateCollection (name, ?options, ?cancellationToken) =
+            let createCollectionOptions = defaultArg options CreateCollectionOptions.None
+            let token = defaultArg cancellationToken Async.DefaultCancellationToken
+
+            let collectionNamespace = CollectionNamespace(databaseNamespace, name)
+            let operation = CreateCollectionOperation(collectionNamespace, messageEncoderSettings)
+
+            createCollectionOptions.AutoIndexId
+            |> Option.iter (fun autoIndexId -> operation.AutoIndexId <- Nullable autoIndexId)
+
+            createCollectionOptions.Capped
+            |> Option.iter (fun capped -> operation.Capped <- Nullable capped)
+
+            createCollectionOptions.MaxDocuments
+            |> Option.iter (fun maxDocuments -> operation.MaxDocuments <- Nullable maxDocuments)
+
+            createCollectionOptions.MaxSize
+            |> Option.iter (fun maxSize -> operation.MaxSize <- Nullable maxSize)
+
+            createCollectionOptions.StorageEngine
+            |> Option.iter (fun storageEngine -> operation.StorageEngine <- storageEngine)
+
+            createCollectionOptions.UsePowerOf2Sizes
+            |> Option.iter (fun usePowerOf2Sizes ->
+                operation.UsePowerOf2Sizes <- Nullable usePowerOf2Sizes)
+
+            use binding = new WritableServerBinding(client.Cluster)
+            operation
+            |> operationExecutor.AsyncExecuteWriteOperation binding token
+            |> Async.Ignore
+
+        member __.AsyncDropCollection (name, ?cancellationToken) =
+            let token = defaultArg cancellationToken Async.DefaultCancellationToken
+
+            let collectionNamespace = CollectionNamespace(databaseNamespace, name)
+            let operation = DropCollectionOperation(collectionNamespace, messageEncoderSettings)
+
+            use binding = new WritableServerBinding(client.Cluster)
+            operation
+            |> operationExecutor.AsyncExecuteWriteOperation binding token
+            |> Async.Ignore
+
+        member __.AsyncListCollections (?options, ?cancellationToken) =
+            let listCollectionsOptions = defaultArg options ListCollectionsOptions.None
+            let token = defaultArg cancellationToken Async.DefaultCancellationToken
+
+            let operation = ListCollectionsOperation(databaseNamespace, messageEncoderSettings)
+
+            listCollectionsOptions.Filter
+            |> Option.iter (fun filter -> operation.Filter <- filter)
+
+            use binding = new ReadPreferenceBinding(client.Cluster, settings.ReadPreference)
+            operation
+            |> operationExecutor.AsyncExecuteCursorReadOperation binding token
+
+        member __.AsyncRenameCollection (oldName, newName, ?options, ?cancellationToken) =
+            let renameCollectionOptions = defaultArg options RenameCollectionOptions.None
+            let token = defaultArg cancellationToken Async.DefaultCancellationToken
+
+            let oldCollectionNamespace = CollectionNamespace(databaseNamespace, oldName)
+            let newCollectionNamespace = CollectionNamespace(databaseNamespace, newName)
+            let operation = RenameCollectionOperation(oldCollectionNamespace,
+                                                      newCollectionNamespace,
+                                                      messageEncoderSettings)
+
+            renameCollectionOptions.DropTarget
+            |> Option.iter (fun dropTarget -> operation.DropTarget <- Nullable dropTarget)
+
+            use binding = new WritableServerBinding(client.Cluster)
+            operation
+            |> operationExecutor.AsyncExecuteWriteOperation binding token
+            |> Async.Ignore
+
+        member __.AsyncRunCommand<'Result> (command, ?readPreference, ?cancellationToken) =
+            // According to the Server Selection specification, the generic "runCommand" method must
+            // act as a read operation and default to using a read preference of "primary".
+            let commandReadPreference = defaultArg readPreference ReadPreference.Primary
+            let token = defaultArg cancellationToken Async.DefaultCancellationToken
+
+            let resultSerializer = BsonSerializer.SerializerRegistry.GetSerializer<'Result>()
+            let operation = ReadCommandOperation<'Result>(databaseNamespace,
+                                                          command,
+                                                          resultSerializer,
+                                                          messageEncoderSettings)
+
+            use binding = new ReadPreferenceBinding(client.Cluster, commandReadPreference)
+            operation
+            |> operationExecutor.AsyncExecuteReadOperation binding token
