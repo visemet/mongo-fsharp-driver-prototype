@@ -15,70 +15,215 @@
 
 namespace FSharp.MongoDB.Driver
 
-open System.Net
+open System
+open System.Net.Security
+open System.Net.Sockets
+open System.Text
 
-open FSharp.MongoDB.Bson.Serialization
+open MongoDB.Bson
+open MongoDB.Bson.IO
 
-[<Interface>]
-/// Represents a client of the cluster.
-type IMongoClient =
-    /// <summary>Returns the specified database.</summary>
-    /// <param name="db">The database name.</param>
-    abstract member GetDatabase : string -> IMongoDatabase
+open MongoDB.Driver
+open MongoDB.Driver.Core.Bindings
+open MongoDB.Driver.Core.Clusters
+open MongoDB.Driver.Core.Clusters.ServerSelectors
+open MongoDB.Driver.Core.Configuration
+open MongoDB.Driver.Core.Operations
+open MongoDB.Driver.Core.WireProtocol.Messages.Encoders
 
-[<AutoOpen>]
-[<RequireQualifiedAccess>]
-/// Provides configuration of the <see cref="MongoClient" />.
-module Client =
+open FSharp.MongoDB.Driver.Operations
 
-    [<RequireQualifiedAccess>]
-    /// Settings for the <see cref="MongoClient" />.
-    type Settings = {
-        Stream : Backbone.StreamSettings
-        ConnectionPool : Backbone.ConnectionPoolSettings
-        ClusterableServer : Backbone.ClusterableServerSettings
-    }
+type internal NonOptionalMongoClientSettings =
+    { GuidRepresentation : GuidRepresentation
+      ReadEncoding : UTF8Encoding
+      ReadPreference : ReadPreference
+      WriteConcern : WriteConcern
+      WriteEncoding : UTF8Encoding }
 
-    /// The default settings for the <see cref="MongoClient" />.
-    let defaultSettings = {
-        Settings.Stream = Backbone.DefaultSettings.stream
-        Settings.ConnectionPool = Backbone.DefaultSettings.connectionPool
-        Settings.ClusterableServer = Backbone.DefaultSettings.clusterableServer
-    }
+type internal MongoClient(cluster:ICluster,
+                          settings:MongoClientSettings,
+                          operationExecutor:IOperationExecutor) =
 
-type MongoClient =
+    let clientSettings : NonOptionalMongoClientSettings =
+        { GuidRepresentation = (defaultArg settings.GuidRepresentation
+                                           BsonDefaults.GuidRepresentation)
+          ReadEncoding = defaultArg settings.ReadEncoding Utf8Encodings.Strict
+          ReadPreference = defaultArg settings.ReadPreference ReadPreference.Primary
+          WriteConcern = defaultArg settings.WriteConcern WriteConcern.Acknowledged
+          WriteEncoding = defaultArg settings.WriteEncoding Utf8Encodings.Strict }
 
-    val private backbone : MongoBackbone
+    let messageEncoderSettings =
+        let add name value (messageEncoderSettings:MessageEncoderSettings) =
+            messageEncoderSettings.Add(name, value)
 
-    new (?settings0 : Client.Settings) =
-        let settings = defaultArg settings0 Client.defaultSettings
-
-        MongoClient({ Backbone.DefaultSettings.all with Stream = settings.Stream
-                                                        ConnectionPool = settings.ConnectionPool
-                                                        ClusterableServer = settings.ClusterableServer })
-
-    new (hosts : DnsEndPoint list, ?settings0 : Client.Settings) =
-        let settings = defaultArg settings0 Client.defaultSettings
-
-        MongoClient({ Backbone.DefaultSettings.all with Stream = settings.Stream
-                                                        ConnectionPool = settings.ConnectionPool
-                                                        ClusterableServer = settings.ClusterableServer
-                                                        Hosts = hosts })
-
-    new (replicaSet : string, hosts : DnsEndPoint list, ?settings0 : Client.Settings) =
-        let settings = defaultArg settings0 Client.defaultSettings
-
-        MongoClient({ Backbone.DefaultSettings.all with Stream = settings.Stream
-                                                        ConnectionPool = settings.ConnectionPool
-                                                        ClusterableServer = settings.ClusterableServer
-                                                        Hosts = hosts
-                                                        ReplicaSet = Some replicaSet })
-
-    private new (settings : Backbone.AllSettings) =
-        do Conventions.register()
-        do Serializers.register()
-
-        { backbone = MongoBackbone(settings) }
+        MessageEncoderSettings()
+        |> add MessageEncoderSettingsName.GuidRepresentation clientSettings.GuidRepresentation
+        |> add MessageEncoderSettingsName.ReadEncoding clientSettings.ReadEncoding
+        |> add MessageEncoderSettingsName.WriteEncoding clientSettings.WriteEncoding
 
     interface IMongoClient with
-        member x.GetDatabase db = MongoDatabase(x.backbone, db) :> IMongoDatabase
+
+        member __.Cluster = cluster
+
+        member client.GetDatabase (name, ?settings) =
+            let databaseOverrides = defaultArg settings MongoDatabaseSettings.None
+            let databaseSettings : NonOptionalMongoDatabaseSettings =
+                { GuidRepresentation = (defaultArg databaseOverrides.GuidRepresentation
+                                                   clientSettings.GuidRepresentation)
+                  ReadEncoding = (defaultArg databaseOverrides.ReadEncoding
+                                             clientSettings.ReadEncoding)
+                  ReadPreference = (defaultArg databaseOverrides.ReadPreference
+                                               clientSettings.ReadPreference)
+                  WriteConcern = (defaultArg databaseOverrides.WriteConcern
+                                             clientSettings.WriteConcern)
+                  WriteEncoding = (defaultArg databaseOverrides.WriteEncoding
+                                              clientSettings.WriteEncoding) }
+
+            let databaseNamespace = DatabaseNamespace name
+            MongoDatabase(client, databaseNamespace, databaseSettings, operationExecutor)
+            :> IMongoDatabase
+
+        member __.AsyncDropDatabase (name, ?cancellationToken) =
+            let token = defaultArg cancellationToken Async.DefaultCancellationToken
+
+            let databaseNamespace = DatabaseNamespace name
+            let operation = DropDatabaseOperation(databaseNamespace, messageEncoderSettings)
+
+            use binding = new WritableServerBinding(cluster)
+            operation
+            |> operationExecutor.AsyncExecuteWriteOperation binding token
+            |> Async.Ignore
+
+        member __.AsyncListDatabases (?cancellationToken) =
+            let token = defaultArg cancellationToken Async.DefaultCancellationToken
+
+            let operation = ListDatabasesOperation(messageEncoderSettings)
+
+            use binding = new ReadPreferenceBinding(cluster, clientSettings.ReadPreference)
+            operation
+            |> operationExecutor.AsyncExecuteCursorReadOperation binding token
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+[<RequireQualifiedAccess>]
+module MongoClient =
+
+    [<CompiledName("Create")>]
+    let create (settings:MongoClientSettings) =
+        let cluster =
+            let toOptional = function
+            | Some x -> Optional x
+            | None -> Optional()
+
+            let builder = ClusterBuilder()
+
+            builder.ConfigureCluster (fun clusterSettings ->
+                let connectionMode = settings.ConnectionMode |> toOptional
+                let endPoints =
+                    settings.Servers
+                    |> Option.map List.toSeq
+                    |> toOptional
+                let replicaSetName = settings.ReplicaSetName |> toOptional
+                let maxServerSelectionWaitQueueSize = settings.WaitQueueSize |> toOptional
+                let postServerSelector =
+                    settings.LocalThreshold
+                    |> Option.map (fun x -> LatencyLimitingServerSelector x :> IServerSelector)
+                    |> toOptional
+
+                clusterSettings.With(
+                    connectionMode = connectionMode,
+                    endPoints = endPoints,
+                    replicaSetName = replicaSetName,
+                    maxServerSelectionWaitQueueSize = maxServerSelectionWaitQueueSize,
+                    postServerSelector = postServerSelector))
+            |> ignore
+
+            builder.ConfigureConnectionPool (fun connectionPoolSettings ->
+                let maxConnections = settings.MaxConnectionPoolSize |> toOptional
+                let minConnections = settings.MinConnectionPoolSize |> toOptional
+                let waitQueueSize = settings.WaitQueueSize |> toOptional
+                let waitQueueTimeout = settings.WaitQueueTimeout |> toOptional
+
+                connectionPoolSettings.With(
+                    maxConnections = maxConnections,
+                    minConnections = minConnections,
+                    waitQueueSize = waitQueueSize,
+                    waitQueueTimeout = waitQueueTimeout))
+            |> ignore
+
+            builder.ConfigureConnection (fun connectionSettings ->
+                let authenticators =
+                    settings.Credentials
+                    |> Option.map List.toSeq
+                    |> toOptional
+                let maxIdleTime = settings.MaxConnectionIdleTime |> toOptional
+                let maxLifeTime = settings.MaxConnectionLifeTime |> toOptional
+
+                connectionSettings.With(
+                    authenticators = authenticators,
+                    maxIdleTime = maxIdleTime,
+                    maxLifeTime = maxLifeTime))
+            |> ignore
+
+            builder.ConfigureTcp (fun tcpStreamSettings ->
+                let addressFamily =
+                    match defaultArg settings.IPv6 false with
+                    | true -> Optional AddressFamily.InterNetworkV6
+                    | false -> Optional()
+                let connectTimeout = settings.ConnectionTimeout |> toOptional
+                let readTimeout =
+                    settings.SocketTimeout
+                    |> Option.map (fun x -> Nullable x)
+                    |> toOptional
+                let writeTimeout =
+                    settings.SocketTimeout
+                    |> Option.map (fun x -> Nullable x)
+                    |> toOptional
+
+                tcpStreamSettings.With(
+                    addressFamily = addressFamily,
+                    connectTimeout = connectTimeout,
+                    readTimeout = readTimeout,
+                    writeTimeout = writeTimeout))
+            |> ignore
+
+            let useSsl = defaultArg settings.UseSsl false
+            match (useSsl, settings.SslSettings) with
+            | (true, Some sslSettings) ->
+                builder.ConfigureSsl (fun sslStreamSettings ->
+                    let clientCertificates =
+                        sslSettings.ClientCertificateCollection
+                        |> Option.map List.toSeq
+                        |> toOptional
+                    let checkCertificateRevocation =
+                        sslSettings.CheckCertificateRevocation
+                        |> toOptional
+                    let clientCertificateSelectionCallback =
+                        sslSettings.ClientCertificateSelectionCallback
+                        |> toOptional
+                    let enabledProtocols = sslSettings.EnabledSslProtocols |> toOptional
+                    let serverCertificateValidationCallback =
+                        let verifySslCertificate = defaultArg settings.VerifySslCertificate true
+                        let validationCallback = sslSettings.ServerCertificateValidationCallback
+                        match (verifySslCertificate, validationCallback) with
+                        | (false, None) ->
+                            Optional (RemoteCertificateValidationCallback (fun _ _ _ _ -> true))
+                        | _ -> sslSettings.ServerCertificateValidationCallback |> toOptional
+
+                    sslStreamSettings.With(
+                        clientCertificates = clientCertificates,
+                        checkCertificateRevocation = checkCertificateRevocation,
+                        clientCertificateSelectionCallback = clientCertificateSelectionCallback,
+                        enabledProtocols = enabledProtocols,
+                        serverCertificateValidationCallback = serverCertificateValidationCallback))
+                |> ignore
+            | _ -> ()
+
+            settings.ClusterConfigurator
+            |> Option.iter (fun clusterConfigurator -> clusterConfigurator builder)
+
+            let cluster = builder.BuildCluster()
+            cluster.Initialize()
+            cluster
+
+        let operationExecutor = OperationExecutor()
+        MongoClient(cluster, settings, operationExecutor) :> IMongoClient

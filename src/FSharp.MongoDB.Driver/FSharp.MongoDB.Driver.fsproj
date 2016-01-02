@@ -58,6 +58,8 @@
     <Compile Include="OperationExecutor.fs" />
     <Compile Include="MongoCollection.fs" />
     <Compile Include="MongoDatabase.fs" />
+    <Compile Include="MongoClient.fsi" />
+    <Compile Include="MongoClient.fs" />
     <None Include="paket.references" />
   </ItemGroup>
   <ItemGroup>
