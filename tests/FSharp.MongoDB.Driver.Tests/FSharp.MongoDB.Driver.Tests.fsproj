@@ -46,6 +46,8 @@
     <Compile Include="DummyCluster.fs" />
     <Compile Include="OperationExecutorSpy.fs" />
     <Compile Include="CollectionReadOperationsTests.fs" />
+    <Compile Include="DatabaseReadOperationsTests.fs" />
+    <Compile Include="DatabaseWriteOperationsTests.fs" />
     <None Include="paket.references" />
     <None Include="app.config" />
   </ItemGroup>
