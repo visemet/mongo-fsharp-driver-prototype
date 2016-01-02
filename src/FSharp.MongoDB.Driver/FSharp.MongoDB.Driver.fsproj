@@ -46,6 +46,12 @@
     <Compile Include="Properties\AssemblyInfo.fs" />
     <Compile Include="MongoSettings.fsi" />
     <Compile Include="MongoSettings.fs" />
+    <Compile Include="CollectionReadOptions.fsi" />
+    <Compile Include="CollectionReadOptions.fs" />
+    <Compile Include="DatabaseReadOptions.fsi" />
+    <Compile Include="DatabaseReadOptions.fs" />
+    <Compile Include="DatabaseWriteOptions.fsi" />
+    <Compile Include="DatabaseWriteOptions.fs" />
     <None Include="paket.references" />
   </ItemGroup>
   <ItemGroup>
