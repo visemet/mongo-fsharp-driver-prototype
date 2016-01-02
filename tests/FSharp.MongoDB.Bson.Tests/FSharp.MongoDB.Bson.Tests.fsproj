@@ -43,6 +43,7 @@
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="SerializationTestHelpers.fs" />
     <Compile Include="FSharpValueSerializationTests.fs" />
     <Compile Include="FSharpListSerializationTests.fs" />
     <Compile Include="FSharpMapSerializationTests.fs" />

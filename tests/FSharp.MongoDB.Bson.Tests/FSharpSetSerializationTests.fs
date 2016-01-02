@@ -13,31 +13,14 @@
  * limitations under the License.
  *)
 
-namespace FSharp.MongoDB.Bson.Tests
+namespace FSharp.MongoDB.Bson.Tests.Serialization
 
 open MongoDB.Bson
-open MongoDB.Bson.IO
-open MongoDB.Bson.Serialization
 
 open NUnit.Framework
 open Swensen.Unquote
 
-open FSharp.MongoDB.Bson.Serialization
-
 module FSharpSetSerialization =
-
-    do FSharpValueSerializer.register()
-
-    let serialize value =
-        let doc = BsonDocument()
-        let writer = new BsonDocumentWriter(doc, BsonDocumentWriterSettings.Defaults)
-        let args = BsonSerializationArgs(value.GetType(), false, false)
-        BsonSerializer.Serialize(writer, value, args = args)
-        doc
-
-    let deserialize doc (typ : System.Type) =
-        let reader = new BsonDocumentReader(doc, BsonDocumentReaderSettings.Defaults)
-        unbox (BsonSerializer.Deserialize(reader, typ, null))
 
     [<TestFixture>]
     module RecordType =
