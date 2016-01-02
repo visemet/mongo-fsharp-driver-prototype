@@ -43,16 +43,16 @@
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Serialization\Conventions\RecordTypeConvention.fs" />
-    <Compile Include="Serialization\Conventions\DiscriminatedUnionConvention.fs" />
-    <Compile Include="Serialization\Conventions\OptionTypeConvention.fs" />
-    <Compile Include="Serialization\Serializers\DiscriminatedUnionSerializer.fs" />
+    <Compile Include="Serialization\FSharpTypeHelpers.fs" />
+    <Compile Include="Serialization\Conventions\FSharpRecordConvention.fs" />
+    <Compile Include="Serialization\Conventions\IgnoreIfNoneConvention.fs" />
+    <Compile Include="Serialization\Conventions\UnionCaseConvention.fs" />
     <Compile Include="Serialization\Serializers\FSharpListSerializer.fs" />
     <Compile Include="Serialization\Serializers\FSharpMapSerializer.fs" />
+    <Compile Include="Serialization\Serializers\FSharpOptionSerializer.fs" />
     <Compile Include="Serialization\Serializers\FSharpSetSerializer.fs" />
-    <Compile Include="Serialization\Serializers\OptionTypeSerializer.fs" />
-    <Compile Include="Serialization\FSharpTypeConventions.fs" />
-    <Compile Include="Serialization\FSharpValueSerializers.fs" />
+    <Compile Include="Serialization\Serializers\FSharpUnionSerializer.fs" />
+    <Compile Include="Serialization\FSharpValueSerializer.fs" />
     <None Include="paket.references" />
   </ItemGroup>
   <PropertyGroup>

@@ -15,26 +15,29 @@
 
 namespace FSharp.MongoDB.Bson.Serialization.Serializers
 
-open System.Collections.Generic
-
+open MongoDB.Bson
 open MongoDB.Bson.Serialization
 open MongoDB.Bson.Serialization.Serializers
 
 /// <summary>
-/// Serializer for F# maps.
+/// Serializer for F# option types that writes the value in the <c>Some</c> case and <c>null</c> in
+/// the <c>None</c> case.
 /// </summary>
-type FSharpMapSerializer<'KeyType, 'ValueType when 'KeyType : comparison>() =
-    inherit SerializerBase<Map<'KeyType, 'ValueType>>()
+type FSharpOptionSerializer<'T>() =
+    inherit SerializerBase<'T option>()
 
-    let serializer = DictionaryInterfaceImplementerSerializer<Dictionary<'KeyType, 'ValueType>>()
+    let serializer = lazy (BsonSerializer.LookupSerializer<'T>())
 
-    override __.Serialize (context, args, mapValue) =
-        let dictValue = Dictionary()
-        mapValue |> Map.iter (fun key value -> dictValue.Add(key, value))
+    override __.Serialize (context, args, value) =
+        let writer = context.Writer
 
-        serializer.Serialize(context, args, dictValue)
+        match value with
+        | Some x -> serializer.Value.Serialize(context, args, x :> obj)
+        | None -> writer.WriteNull()
 
     override __.Deserialize (context, args) =
-        serializer.Deserialize(context, args)
-        |> Seq.map (|KeyValue|)
-        |> Map.ofSeq
+        let reader = context.Reader
+
+        match reader.GetCurrentBsonType() with
+        | BsonType.Null -> reader.ReadNull(); None
+        | _ -> Some (serializer.Value.Deserialize(context, args))

@@ -19,26 +19,28 @@ open Microsoft.FSharp.Reflection
 
 open MongoDB.Bson.Serialization.Conventions
 
-/// <summary>
-/// Convention for a record type that maps the constructor and fields.
-/// </summary>
-type RecordTypeConvention() =
-    inherit ConventionBase("F# Record Type")
+open FSharp.MongoDB.Bson.Serialization.Helpers
 
-    let isRecord typ = FSharpType.IsRecord typ
+/// <summary>
+/// Convention for F# record types that initializes a <c>BsonClassMap</c> by mapping the record
+/// type's constructor and fields.
+/// </summary>
+type FSharpRecordConvention() =
+    inherit ConventionBase()
 
     interface IClassMapConvention with
-        member __.Apply(classMap) =
-            let typ = classMap.ClassType
 
-            if FSharpType.IsRecord(typ) then
-                let fields = FSharpType.GetRecordFields(typ)
+        member __.Apply classMap =
+            match classMap.ClassType with
+            | IsRecord typ ->
+                let fields = FSharpType.GetRecordFields typ
                 let names = fields |> Array.map (fun x -> x.Name)
                 let types = fields |> Array.map (fun x -> x.PropertyType)
 
-                // Map constructor
-                let ctor = typ.GetConstructor(types)
+                // Map the constructor of the record type.
+                let ctor = FSharpValue.PreComputeRecordConstructorInfo typ
                 classMap.MapConstructor(ctor, names) |> ignore
 
-                // Map members
-                fields |> Array.iter (fun x -> classMap.MapMember(x) |> ignore)
+                // Map each field of the record type.
+                fields |> Array.iter (classMap.MapMember >> ignore)
+            | _ -> ()

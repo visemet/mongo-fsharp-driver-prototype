@@ -15,24 +15,21 @@
 
 namespace FSharp.MongoDB.Bson.Serialization.Conventions
 
-open Microsoft.FSharp.Reflection
-
 open MongoDB.Bson.Serialization.Conventions
 
-/// <summary>
-/// Convention for option types that writes the value in the <c>Some</c> case
-/// and omits the field in the <c>None</c> case.
-/// </summary>
-type OptionTypeConvention() =
-    inherit ConventionBase("F# Option Type")
+open FSharp.MongoDB.Bson.Serialization.Helpers
 
-    let isOption typ = FSharpType.IsUnion typ && typ.IsGenericType
-                                              && typ.GetGenericTypeDefinition() = typedefof<_ option>
+/// <summary>
+/// Convention for F# option types that writes the value in the <c>Some</c> case and omits the field
+/// in the <c>None</c> case.
+/// </summary>
+type IgnoreIfNoneConvention() =
+    inherit ConventionBase()
 
     interface IMemberMapConvention with
-        member __.Apply(memberMap) =
-            let typ = memberMap.MemberType
-
-            if isOption typ then
+        member __.Apply memberMap =
+            match memberMap.MemberType with
+            | IsOption _ ->
                 memberMap.SetDefaultValue None |> ignore
-                memberMap.SetIgnoreIfNull true |> ignore
+                memberMap.SetIgnoreIfDefault true |> ignore
+            | _ -> ()

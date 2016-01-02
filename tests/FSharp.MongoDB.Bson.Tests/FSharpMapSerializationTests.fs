@@ -26,13 +26,13 @@ open FSharp.MongoDB.Bson.Serialization
 
 module FSharpMapSerialization =
 
-    do Conventions.register()
-    do Serializers.register()
+    do FSharpValueSerializer.register()
 
     let serialize value =
         let doc = BsonDocument()
         let writer = new BsonDocumentWriter(doc, BsonDocumentWriterSettings.Defaults)
-        BsonSerializer.Serialize(writer, value.GetType(), value, null)
+        let args = BsonSerializationArgs(value.GetType(), false, false)
+        BsonSerializer.Serialize(writer, value, args = args)
         doc
 
     let deserialize doc (typ : System.Type) =

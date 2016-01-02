@@ -21,17 +21,23 @@ open MongoDB.Bson.Serialization
 open MongoDB.Bson.Serialization.Serializers
 
 /// <summary>
-/// A serializer for F# sets.
+/// Serializer for F# sets.
 /// </summary>
 type FSharpSetSerializer<'ElemType when 'ElemType : comparison>() =
-    inherit BsonBaseSerializer()
+    inherit EnumerableSerializerBase<Set<'ElemType>, 'ElemType>()
 
-    let serializer = EnumerableSerializer<'ElemType>()
+    override __.EnumerateItemsInSerializationOrder lst = Set.toSeq lst
 
-    override __.Serialize(writer, nominalType, value, options) =
-        serializer.Serialize(writer, typeof<IEnumerable<'ElemType>>, value, options)
+    // XXX: Using a mutable List because the AddItem member does not return a value,
+    //      so it is not possible to accumulate into a set
+    override __.CreateAccumulator() = List<'ElemType>() |> box
 
-    override __.Deserialize(reader, nominalType, actualType, options) =
-        // deserialize into `IEnumerable` first, then convert to a set
-        let res = serializer.Deserialize(reader, typeof<IEnumerable<'ElemType>>, options)
-        res |> unbox |> Set.ofSeq<'ElemType> |> box
+    override __.AddItem (accumulator, item) =
+        match accumulator with
+        | :? List<'ElemType> as lst -> lst.Add item
+        | _ -> failwithf "Expected accumulator to be a list, but got %A" accumulator
+
+    override __.FinalizeResult accumulator =
+        match accumulator with
+        | :? List<'ElemType> as lst -> Set.ofSeq lst
+        | _ -> failwithf "Expected accumulator to be a list, but got %A" accumulator
