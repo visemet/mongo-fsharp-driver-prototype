@@ -22,102 +22,126 @@ open Swensen.Unquote
 
 module FSharpListSerialization =
 
-    [<TestFixture>]
+    type Record = { Ints : int list }
+
+    [<Test>]
+    let ``test serialize an empty list``() =
+        let value = { Ints = [] }
+
+        let result = <@ serialize value @>
+        let expected = BsonDocument("Ints", BsonArray List.empty<int>)
+
+        test <@ %result = expected @>
+
+    [<Test>]
+    let ``test deserialize an empty list``() =
+        let doc = BsonDocument("Ints", BsonArray List.empty<int>)
+
+        let result = <@ deserialize doc typeof<Record> @>
+        let expected = { Ints = [] }
+
+        test <@ %result = expected @>
+
+    [<Test>]
+    let ``test serialize a list of one element``() =
+        let value = { Ints = [ 0 ] }
+
+        let result = <@ serialize value @>
+        let expected = BsonDocument("Ints", BsonArray [ 0 ])
+
+        test <@ %result = expected @>
+
+    [<Test>]
+    let ``test deserialize a list of one element``() =
+        let doc = BsonDocument("Ints", BsonArray [ 0 ])
+
+        let result = <@ deserialize doc typeof<Record> @>
+        let expected = { Ints = [ 0 ] }
+
+        test <@ %result = expected @>
+
+    [<Test>]
+    let ``test serialize a list of multiple elements``() =
+        let value = { Ints = [ 1; 2; 3 ] }
+
+        let result = <@ serialize value @>
+        let expected = BsonDocument("Ints", BsonArray [ 1; 2; 3 ])
+
+        test <@ %result = expected @>
+
+    [<Test>]
+    let ``test deserialize a list of multiple elements``() =
+        let doc = BsonDocument("Ints", BsonArray [ 1; 2; 3 ])
+
+        let result = <@ deserialize doc typeof<Record> @>
+        let expected = { Ints = [ 1; 2; 3 ] }
+
+        test <@ %result = expected @>
+
+    module OptionType =
+
+        type Record = { MaybeStrings : string option list }
+
+        [<Test>]
+        let ``test serialize a list of optional strings``() =
+            let value = { MaybeStrings = [ Some "a"; None; Some "z" ] }
+
+            let result = <@ serialize value @>
+            let expected = BsonDocument("MaybeStrings", BsonArray [ "a"; null; "z" ])
+
+            test <@ %result = expected @>
+
+        [<Test>]
+        let ``test deserialize a list of optional strings``() =
+            let doc = BsonDocument("MaybeStrings", BsonArray [ "a"; null; "z" ])
+
+            let result = <@ deserialize doc typeof<Record> @>
+            let expected = { MaybeStrings = [ Some "a"; None; Some "z" ] }
+
+            test <@ %result = expected @>
+
     module RecordType =
 
-        type Primitive = {
-            bool : bool list
-            int : int list
-            string : string list
-            float : float list
-        }
+        type KeyValuePair =
+            { Key : string
+              Value : int }
+
+        type Record = { Elements : KeyValuePair list }
 
         [<Test>]
-        let ``test serialize primitive lists in record type empty``() =
-            let value = { bool = []
-                          int = []
-                          string = []
-                          float = [] }
+        let ``test serialize a list of record types``() =
+            let value = { Elements = [ { Key = "a"; Value = 1 }
+                                       { Key = "b"; Value = 2 }
+                                       { Key = "c"; Value = 3 } ] }
 
             let result = <@ serialize value @>
-            let expected = <@ BsonDocument([ BsonElement("bool", BsonArray([] : bool list))
-                                             BsonElement("int", BsonArray([] : int list))
-                                             BsonElement("string", BsonArray([] : string list))
-                                             BsonElement("float", BsonArray([] : float list)) ]) @>
+            let expected =
+                BsonDocument(
+                    "Elements",
+                    BsonArray [ BsonDocument [ BsonElement("Key", BsonString "a")
+                                               BsonElement("Value", BsonInt32 1) ]
+                                BsonDocument [ BsonElement("Key", BsonString "b")
+                                               BsonElement("Value", BsonInt32 2) ]
+                                BsonDocument [ BsonElement("Key", BsonString "c")
+                                               BsonElement("Value", BsonInt32 3) ] ])
 
-            test <@ %result = %expected @>
-
-        [<Test>]
-        let ``test deserialize primitive lists in record type empty``() =
-            let doc = BsonDocument([ BsonElement("bool", BsonArray([] : bool list))
-                                     BsonElement("int", BsonArray([] : int list))
-                                     BsonElement("string", BsonArray([] : string list))
-                                     BsonElement("float", BsonArray([] : float list)) ])
-
-            let result = <@ deserialize doc typeof<Primitive> @>
-            let expected = <@ { bool = []
-                                int = []
-                                string = []
-                                float = [] } @>
-
-            test <@ %result = %expected @>
+            test <@ %result = expected @>
 
         [<Test>]
-        let ``test serialize primitive lists in record type singleton``() =
-            let value = { bool = [ false ]
-                          int = [ 0 ]
-                          string = [ "0.0" ]
-                          float = [ 0.0 ] }
+        let ``test deserialize a list of record types``() =
+            let doc =
+                BsonDocument(
+                    "Elements",
+                    BsonArray [ BsonDocument [ BsonElement("Key", BsonString "a")
+                                               BsonElement("Value", BsonInt32 1) ]
+                                BsonDocument [ BsonElement("Key", BsonString "b")
+                                               BsonElement("Value", BsonInt32 2) ]
+                                BsonDocument [ BsonElement("Key", BsonString "c")
+                                               BsonElement("Value", BsonInt32 3) ] ])
 
-            let result = <@ serialize value @>
-            let expected = <@ BsonDocument([ BsonElement("bool", BsonArray([ false ]))
-                                             BsonElement("int", BsonArray([ 0 ]))
-                                             BsonElement("string", BsonArray([ "0.0" ]))
-                                             BsonElement("float", BsonArray([ 0.0 ])) ]) @>
+            let result = <@ deserialize doc typeof<Record> @>
+            let expected = { Elements = [ { Key = "a"; Value = 1 }
+                                          { Key = "b"; Value = 2 }
+                                          { Key = "c"; Value = 3 } ] }
 
-            test <@ %result = %expected @>
-
-        [<Test>]
-        let ``test deserialize primitive lists in record type singleton``() =
-            let doc = BsonDocument([ BsonElement("bool", BsonArray([ false ]))
-                                     BsonElement("int", BsonArray([ 0 ]))
-                                     BsonElement("string", BsonArray([ "0.0" ]))
-                                     BsonElement("float", BsonArray([ 0.0 ])) ])
-
-            let result = <@ deserialize doc typeof<Primitive> @>
-            let expected = <@ { bool = [ false ]
-                                int = [ 0 ]
-                                string = [ "0.0" ]
-                                float = [ 0.0 ] } @>
-
-            test <@ %result = %expected @>
-
-        [<Test>]
-        let ``test serialize primitive lists in record type``() =
-            let value = { bool = [ true; false; false ]
-                          int = [ 1; 0; 0 ]
-                          string = [ "1.0"; "0.0"; "0.0" ]
-                          float = [ 1.0; 0.0; 0.0 ] }
-
-            let result = <@ serialize value @>
-            let expected = <@ BsonDocument([ BsonElement("bool", BsonArray([ true; false; false ]))
-                                             BsonElement("int", BsonArray([ 1; 0; 0 ]))
-                                             BsonElement("string", BsonArray([ "1.0"; "0.0"; "0.0" ]))
-                                             BsonElement("float", BsonArray([ 1.0; 0.0; 0.0 ])) ]) @>
-
-            test <@ %result = %expected @>
-
-        [<Test>]
-        let ``test deserialize primitive lists in record type``() =
-            let doc = BsonDocument([ BsonElement("bool", BsonArray([ true; false; false ]))
-                                     BsonElement("int", BsonArray([ 1; 0; 0 ]))
-                                     BsonElement("string", BsonArray([ "1.0"; "0.0"; "0.0" ]))
-                                     BsonElement("float", BsonArray([ 1.0; 0.0; 0.0 ])) ])
-
-            let result = <@ deserialize doc typeof<Primitive> @>
-            let expected = <@ { bool = [ true; false; false ]
-                                int = [ 1; 0; 0 ]
-                                string = [ "1.0"; "0.0"; "0.0" ]
-                                float = [ 1.0; 0.0; 0.0 ] } @>
-
-            test <@ %result = %expected @>
+            test <@ %result = expected @>

@@ -22,118 +22,120 @@ open Swensen.Unquote
 
 module FSharpMapSerialization =
 
-    [<TestFixture>]
-    module RecordType =
+    type Primitive =
+        { Bool : Map<string, bool>
+          Int : Map<string, int>
+          String : Map<string, string>
+          Float : Map<string, float> }
 
-        type Primitive = {
-            bool : Map<string, bool>
-            int : Map<string, int>
-            string : Map<string, string>
-            float : Map<string, float>
-        }
+    [<Test>]
+    let ``test serialize an empty map``() =
+        let value = { Bool = Map.empty<string, bool>
+                      Int = Map.empty<string, int>
+                      String = Map.empty<string, string>
+                      Float = Map.empty<string, float> }
 
-        [<Test>]
-        let ``test serialize primitive maps in record type empty``() =
-            let value = { bool = [] |> Map.ofList<string, bool>
-                          int = [] |> Map.ofList<string, int>
-                          string = [] |> Map.ofList<string, string>
-                          float = [] |> Map.ofList<string, float> }
+        let result = <@ serialize value @>
+        let expected = BsonDocument([ BsonElement("Bool", BsonDocument())
+                                      BsonElement("Int", BsonDocument())
+                                      BsonElement("String", BsonDocument())
+                                      BsonElement("Float", BsonDocument()) ])
 
-            let result = <@ serialize value @>
-            let expected = <@ BsonDocument([ BsonElement("bool", BsonDocument())
-                                             BsonElement("int", BsonDocument())
-                                             BsonElement("string", BsonDocument())
-                                             BsonElement("float", BsonDocument()) ]) @>
+        test <@ %result = expected @>
 
-            test <@ %result = %expected @>
+    [<Test>]
+    let ``test deserialize an empty map``() =
+        let doc = BsonDocument([ BsonElement("Bool", BsonDocument())
+                                 BsonElement("Int", BsonDocument())
+                                 BsonElement("String", BsonDocument())
+                                 BsonElement("Float", BsonDocument()) ])
 
-        [<Test>]
-        let ``test deserialize primitive maps in record type empty``() =
-            let doc = BsonDocument([ BsonElement("bool", BsonDocument())
-                                     BsonElement("int", BsonDocument())
-                                     BsonElement("string", BsonDocument())
-                                     BsonElement("float", BsonDocument()) ])
+        let result = <@ deserialize doc typeof<Primitive> @>
+        let expected = { Bool = Map.empty<string, bool>
+                         Int = Map.empty<string, int>
+                         String = Map.empty<string, string>
+                         Float = Map.empty<string, float> }
 
-            let result = <@ deserialize doc typeof<Primitive> @>
-            let expected = <@ { bool = [] |> Map.ofList<string, bool>
-                                int = [] |> Map.ofList<string, int>
-                                string = [] |> Map.ofList<string, string>
-                                float = [] |> Map.ofList<string, float> } @>
+        test <@ %result = expected @>
 
-            test <@ %result = %expected @>
+    [<Test>]
+    let ``test serialize a map of one element``() =
+        let value = { Bool = Map.ofList<string, bool> [ ("a", false) ]
+                      Int = Map.ofList<string, int> [ ("a", 0) ]
+                      String = Map.ofList<string, string> [ ("a", "0.0") ]
+                      Float = Map.ofList<string, float> [ ("a", 0.0) ] }
 
-        [<Test>]
-        let ``test serialize primitive maps in record type singleton``() =
-            let value = { bool = [ ("a", false) ] |> Map.ofList<string, bool>
-                          int = [ ("a", 0) ] |> Map.ofList<string, int>
-                          string = [ ("a", "0.0") ] |> Map.ofList<string, string>
-                          float = [ ("a", 0.0) ] |> Map.ofList<string, float> }
+        let result = <@ serialize value @>
+        let expected = BsonDocument([ BsonElement("Bool", BsonDocument("a", BsonBoolean false))
+                                      BsonElement("Int", BsonDocument("a", BsonInt32 0))
+                                      BsonElement("String", BsonDocument("a", BsonString "0.0"))
+                                      BsonElement("Float", BsonDocument("a", BsonDouble 0.0)) ])
 
-            let result = <@ serialize value @>
-            let expected = <@ BsonDocument([ BsonElement("bool", BsonDocument("a", BsonBoolean(false)))
-                                             BsonElement("int", BsonDocument("a", BsonInt32(0)))
-                                             BsonElement("string", BsonDocument("a", BsonString("0.0")))
-                                             BsonElement("float", BsonDocument("a", BsonDouble(0.0))) ]) @>
+        test <@ %result = expected @>
 
-            test <@ %result = %expected @>
+    [<Test>]
+    let ``test deserialize a map of one element``() =
+        let doc = BsonDocument([ BsonElement("Bool", BsonDocument("a", BsonBoolean false))
+                                 BsonElement("Int", BsonDocument("a", BsonInt32 0))
+                                 BsonElement("String", BsonDocument("a", BsonString "0.0"))
+                                 BsonElement("Float", BsonDocument("a", BsonDouble 0.0)) ])
 
-        [<Test>]
-        let ``test deserialize primitive maps in record type singleton``() =
-            let doc = BsonDocument([ BsonElement("bool", BsonDocument("a", BsonBoolean(false)))
-                                     BsonElement("int", BsonDocument("a", BsonInt32(0)))
-                                     BsonElement("string", BsonDocument("a", BsonString("0.0")))
-                                     BsonElement("float", BsonDocument("a", BsonDouble(0.0))) ])
+        let result = <@ deserialize doc typeof<Primitive> @>
+        let expected = { Bool = Map.ofList<string, bool> [ ("a", false) ]
+                         Int = Map.ofList<string, int> [ ("a", 0) ]
+                         String = Map.ofList<string, string> [ ("a", "0.0") ]
+                         Float = Map.ofList<string, float> [ ("a", 0.0) ] }
 
-            let result = <@ deserialize doc typeof<Primitive> @>
-            let expected = <@ { bool = [ ("a", false) ] |> Map.ofList<string, bool>
-                                int = [ ("a", 0) ] |> Map.ofList<string, int>
-                                string = [ ("a", "0.0") ] |> Map.ofList<string, string>
-                                float = [ ("a", 0.0) ] |> Map.ofList<string, float> } @>
+        test <@ %result = expected @>
 
-            test <@ %result = %expected @>
+    [<Test>]
+    let ``test serialize a map of multiple elements``() =
+        let value =
+            { Bool = Map.ofList<string, bool> [ ("a", false); ("b", true); ("c", false) ]
+              Int = Map.ofList<string, int> [ ("a", 0); ("b", 1); ("c", 2) ]
+              String = Map.ofList<string, string> [ ("a", "0.0"); ("b", "1.0"); ("c", "2.0") ]
+              Float = Map.ofList<string, float> [ ("a", 0.0); ("b", 1.0); ("c", 2.0) ] }
 
-        [<Test>]
-        let ``test serialize primitive maps in record type``() =
-            let value = { bool = [ ("b", true); ("a", false); ("c", false) ] |> Map.ofList<string, bool>
-                          int = [ ("b", 1); ("a", 0); ("c", 2) ] |> Map.ofList<string, int>
-                          string = [ ("b", "1.0"); ("a", "0.0"); ("c", "2.0") ] |> Map.ofList<string, string>
-                          float = [ ("b", 1.0); ("a", 0.0); ("c", 2.0) ] |> Map.ofList<string, float> }
+        let result = <@ serialize value @>
+        let expected =
+            BsonDocument(
+                [ BsonElement("Bool", BsonDocument([ BsonElement("a", BsonBoolean false)
+                                                     BsonElement("b", BsonBoolean true)
+                                                     BsonElement("c", BsonBoolean false) ]))
+                  BsonElement("Int", BsonDocument([ BsonElement("a", BsonInt32 0)
+                                                    BsonElement("b", BsonInt32 1)
+                                                    BsonElement("c", BsonInt32 2) ]))
+                  BsonElement("String", BsonDocument([ BsonElement("a", BsonString "0.0")
+                                                       BsonElement("b", BsonString "1.0")
+                                                       BsonElement("c", BsonString "2.0") ]))
+                  BsonElement("Float", BsonDocument([ BsonElement("a", BsonDouble 0.0)
+                                                      BsonElement("b", BsonDouble 1.0)
+                                                      BsonElement("c", BsonDouble 2.0) ])) ])
 
-            let result = <@ serialize value @>
-            let expected = <@ BsonDocument([ BsonElement("bool", BsonDocument([ BsonElement("a", BsonBoolean(false))
-                                                                                BsonElement("b", BsonBoolean(true))
-                                                                                BsonElement("c", BsonBoolean(false)) ]))
-                                             BsonElement("int", BsonDocument([ BsonElement("a", BsonInt32(0))
-                                                                               BsonElement("b", BsonInt32(1))
-                                                                               BsonElement("c", BsonInt32(2)) ]))
-                                             BsonElement("string", BsonDocument([ BsonElement("a", BsonString("0.0"))
-                                                                                  BsonElement("b", BsonString("1.0"))
-                                                                                  BsonElement("c", BsonString("2.0")) ]))
-                                             BsonElement("float", BsonDocument([ BsonElement("a", BsonDouble(0.0))
-                                                                                 BsonElement("b", BsonDouble(1.0))
-                                                                                 BsonElement("c", BsonDouble(2.0)) ])) ]) @>
+        test <@ %result = expected @>
 
-            test <@ %result = %expected @>
+    [<Test>]
+    let ``test deserialize a map of multiple elements``() =
+        let doc =
+            BsonDocument(
+                [ BsonElement("Bool", BsonDocument([ BsonElement("a", BsonBoolean false)
+                                                     BsonElement("b", BsonBoolean true)
+                                                     BsonElement("c", BsonBoolean false) ]))
+                  BsonElement("Int", BsonDocument([ BsonElement("a", BsonInt32 0)
+                                                    BsonElement("b", BsonInt32 1)
+                                                    BsonElement("c", BsonInt32 2) ]))
+                  BsonElement("String", BsonDocument([ BsonElement("a", BsonString "0.0")
+                                                       BsonElement("b", BsonString "1.0")
+                                                       BsonElement("c", BsonString "2.0") ]))
+                  BsonElement("Float", BsonDocument([ BsonElement("a", BsonDouble 0.0)
+                                                      BsonElement("b", BsonDouble 1.0)
+                                                      BsonElement("c", BsonDouble 2.0) ])) ])
 
-        [<Test>]
-        let ``test deserialize primitive maps in record type``() =
-            let doc = BsonDocument([ BsonElement("bool", BsonDocument([ BsonElement("a", BsonBoolean(false))
-                                                                        BsonElement("b", BsonBoolean(true))
-                                                                        BsonElement("c", BsonBoolean(false)) ]))
-                                     BsonElement("int", BsonDocument([ BsonElement("a", BsonInt32(0))
-                                                                       BsonElement("b", BsonInt32(1))
-                                                                       BsonElement("c", BsonInt32(2)) ]))
-                                     BsonElement("string", BsonDocument([ BsonElement("a", BsonString("0.0"))
-                                                                          BsonElement("b", BsonString("1.0"))
-                                                                          BsonElement("c", BsonString("2.0")) ]))
-                                     BsonElement("float", BsonDocument([ BsonElement("a", BsonDouble(0.0))
-                                                                         BsonElement("b", BsonDouble(1.0))
-                                                                         BsonElement("c", BsonDouble(2.0)) ])) ])
+        let result = <@ deserialize doc typeof<Primitive> @>
+        let expected =
+            { Bool = Map.ofList<string, bool> [ ("a", false); ("b", true); ("c", false) ]
+              Int = Map.ofList<string, int> [ ("a", 0); ("b", 1); ("c", 2) ]
+              String = Map.ofList<string, string> [ ("a", "0.0"); ("b", "1.0"); ("c", "2.0") ]
+              Float = Map.ofList<string, float> [ ("a", 0.0); ("b", 1.0); ("c", 2.0) ] }
 
-            let result = <@ deserialize doc typeof<Primitive> @>
-            let expected = <@ { bool = [ ("b", true); ("a", false); ("c", false) ] |> Map.ofList<string, bool>
-                                int = [ ("b", 1); ("a", 0); ("c", 2) ] |> Map.ofList<string, int>
-                                string = [ ("b", "1.0"); ("a", "0.0"); ("c", "2.0") ] |> Map.ofList<string, string>
-                                float = [ ("b", 1.0); ("a", 0.0); ("c", 2.0) ] |> Map.ofList<string, float> } @>
-
-            test <@ %result = %expected @>
+        test <@ %result = expected @>

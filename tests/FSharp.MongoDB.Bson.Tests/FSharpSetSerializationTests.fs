@@ -22,102 +22,126 @@ open Swensen.Unquote
 
 module FSharpSetSerialization =
 
-    [<TestFixture>]
+    type Record = { Ints : Set<int> }
+
+    [<Test>]
+    let ``test serialize an empty set``() =
+        let value = { Ints = Set.empty<int> }
+
+        let result = <@ serialize value @>
+        let expected = BsonDocument("Ints", BsonArray Set.empty<int>)
+
+        test <@ %result = expected @>
+
+    [<Test>]
+    let ``test deserialize an empty set``() =
+        let doc = BsonDocument("Ints", BsonArray Set.empty<int>)
+
+        let result = <@ deserialize doc typeof<Record> @>
+        let expected = { Ints = Set.empty<int> }
+
+        test <@ %result = expected @>
+
+    [<Test>]
+    let ``test serialize a set of one element``() =
+        let value = { Ints = Set.ofList [ 0 ] }
+
+        let result = <@ serialize value @>
+        let expected = BsonDocument("Ints", BsonArray [ 0 ])
+
+        test <@ %result = expected @>
+
+    [<Test>]
+    let ``test deserialize a set of one element``() =
+        let doc = BsonDocument("Ints", BsonArray [ 0 ])
+
+        let result = <@ deserialize doc typeof<Record> @>
+        let expected = { Ints = Set.ofList [ 0 ] }
+
+        test <@ %result = expected @>
+
+    [<Test>]
+    let ``test serialize a set of multiple elements``() =
+        let value = { Ints = Set.ofList [ 1; 2; 3 ] }
+
+        let result = <@ serialize value @>
+        let expected = BsonDocument("Ints", BsonArray (Set.ofList [ 1; 2; 3 ]))
+
+        test <@ %result = expected @>
+
+    [<Test>]
+    let ``test deserialize a set of multiple elements``() =
+        let doc = BsonDocument("Ints", BsonArray [ 1; 2; 3 ])
+
+        let result = <@ deserialize doc typeof<Record> @>
+        let expected = { Ints = Set.ofList [ 1; 2; 3 ] }
+
+        test <@ %result = expected @>
+
+    module OptionType =
+
+        type Record = { MaybeStrings : Set<string option> }
+
+        [<Test>]
+        let ``test serialize a set of optional strings``() =
+            let value = { MaybeStrings = Set.ofList [ Some "a"; None; Some "z" ] }
+
+            let result = <@ serialize value @>
+            let expected = BsonDocument("MaybeStrings", BsonArray (Set.ofList ["a"; null; "z"]))
+
+            test <@ %result = expected @>
+
+        [<Test>]
+        let ``test deserialize a set of optional strings``() =
+            let doc = BsonDocument("MaybeStrings", BsonArray [ "a"; null; "z" ])
+
+            let result = <@ deserialize doc typeof<Record> @>
+            let expected = { MaybeStrings = Set.ofList [ Some "a"; None; Some "z" ] }
+
+            test <@ %result = expected @>
+
     module RecordType =
 
-        type Primitive = {
-            bool : Set<bool>
-            int : Set<int>
-            string : Set<string>
-            float : Set<float>
-        }
+        type KeyValuePair =
+            { Key : string
+              Value : int }
+
+        type Record = { Elements : Set<KeyValuePair> }
 
         [<Test>]
-        let ``test serialize primitive sets in record type empty``() =
-            let value = { bool = [] |> Set.ofList<bool>
-                          int = [] |> Set.ofList<int>
-                          string = [] |> Set.ofList<string>
-                          float = [] |> Set.ofList<float> }
+        let ``test serialize a set of record types``() =
+            let value = { Elements = Set.ofList [ { Key = "a"; Value = 1 }
+                                                  { Key = "b"; Value = 2 }
+                                                  { Key = "c"; Value = 3 } ] }
 
             let result = <@ serialize value @>
-            let expected = <@ BsonDocument([ BsonElement("bool", BsonArray([] : bool list))
-                                             BsonElement("int", BsonArray([] : int list))
-                                             BsonElement("string", BsonArray([] : string list))
-                                             BsonElement("float", BsonArray([] : float list)) ]) @>
+            let expected =
+                BsonDocument(
+                    "Elements",
+                    BsonArray [ BsonDocument [ BsonElement("Key", BsonString "a")
+                                               BsonElement("Value", BsonInt32 1) ]
+                                BsonDocument [ BsonElement("Key", BsonString "b")
+                                               BsonElement("Value", BsonInt32 2) ]
+                                BsonDocument [ BsonElement("Key", BsonString "c")
+                                               BsonElement("Value", BsonInt32 3) ] ])
 
-            test <@ %result = %expected @>
-
-        [<Test>]
-        let ``test deserialize primitive sets in record type empty``() =
-            let doc = BsonDocument([ BsonElement("bool", BsonArray([] : bool list))
-                                     BsonElement("int", BsonArray([] : int list))
-                                     BsonElement("string", BsonArray([] : string list))
-                                     BsonElement("float", BsonArray([] : float list)) ])
-
-            let result = <@ deserialize doc typeof<Primitive> @>
-            let expected = <@ { bool = [] |> Set.ofList<bool>
-                                int = [] |> Set.ofList<int>
-                                string = [] |> Set.ofList<string>
-                                float = [] |> Set.ofList<float> } @>
-
-            test <@ %result = %expected @>
+            test <@ %result = expected @>
 
         [<Test>]
-        let ``test serialize primitive sets in record type singleton``() =
-            let value = { bool = [ false ] |> Set.ofList
-                          int = [ 0 ] |> Set.ofList
-                          string = [ "0.0" ] |> Set.ofList
-                          float = [ 0.0 ] |> Set.ofList }
+        let ``test deserialize a set of record types``() =
+            let doc =
+                BsonDocument(
+                    "Elements",
+                    BsonArray [ BsonDocument [ BsonElement("Key", BsonString "a")
+                                               BsonElement("Value", BsonInt32 1) ]
+                                BsonDocument [ BsonElement("Key", BsonString "b")
+                                               BsonElement("Value", BsonInt32 2) ]
+                                BsonDocument [ BsonElement("Key", BsonString "c")
+                                               BsonElement("Value", BsonInt32 3) ] ])
 
-            let result = <@ serialize value @>
-            let expected = <@ BsonDocument([ BsonElement("bool", BsonArray([ false ]))
-                                             BsonElement("int", BsonArray([ 0 ]))
-                                             BsonElement("string", BsonArray([ "0.0" ]))
-                                             BsonElement("float", BsonArray([ 0.0 ])) ]) @>
+            let result = <@ deserialize doc typeof<Record> @>
+            let expected = { Elements = Set.ofList [ { Key = "a"; Value = 1 }
+                                                     { Key = "b"; Value = 2 }
+                                                     { Key = "c"; Value = 3 } ] }
 
-            test <@ %result = %expected @>
-
-        [<Test>]
-        let ``test deserialize primitive sets in record type singleton``() =
-            let doc = BsonDocument([ BsonElement("bool", BsonArray([ false ]))
-                                     BsonElement("int", BsonArray([ 0 ]))
-                                     BsonElement("string", BsonArray([ "0.0" ]))
-                                     BsonElement("float", BsonArray([ 0.0 ])) ])
-
-            let result = <@ deserialize doc typeof<Primitive> @>
-            let expected = <@ { bool = [ false ] |> Set.ofList
-                                int = [ 0 ] |> Set.ofList
-                                string = [ "0.0" ] |> Set.ofList
-                                float = [ 0.0 ] |> Set.ofList } @>
-
-            test <@ %result = %expected @>
-
-        [<Test>]
-        let ``test serialize primitive sets in record type``() =
-            let value = { bool = [ true; false; false ] |> Set.ofList
-                          int = [ 1; 0; 2 ] |> Set.ofList
-                          string = [ "1.0"; "0.0"; "2.0" ] |> Set.ofList
-                          float = [ 1.0; 0.0; 2.0 ] |> Set.ofList }
-
-            let result = <@ serialize value @>
-            let expected = <@ BsonDocument([ BsonElement("bool", BsonArray([ false; true ]))
-                                             BsonElement("int", BsonArray([ 0; 1; 2 ]))
-                                             BsonElement("string", BsonArray([ "0.0"; "1.0"; "2.0" ]))
-                                             BsonElement("float", BsonArray([ 0.0; 1.0; 2.0 ])) ]) @>
-
-            test <@ %result = %expected @>
-
-        [<Test>]
-        let ``test deserialize primitive sets in record type``() =
-            let doc = BsonDocument([ BsonElement("bool", BsonArray([ true; false; false ]))
-                                     BsonElement("int", BsonArray([ 1; 0; 2 ]))
-                                     BsonElement("string", BsonArray([ "1.0"; "0.0"; "2.0" ]))
-                                     BsonElement("float", BsonArray([ 1.0; 0.0; 2.0 ])) ])
-
-            let result = <@ deserialize doc typeof<Primitive> @>
-            let expected = <@ { bool = [ false; false; true ] |> Set.ofList
-                                int = [ 0; 1; 2 ] |> Set.ofList
-                                string = [ "0.0"; "1.0"; "2.0" ] |> Set.ofList
-                                float = [ 0.0; 1.0; 2.0 ] |> Set.ofList } @>
-
-            test <@ %result = %expected @>
+            test <@ %result = expected @>
