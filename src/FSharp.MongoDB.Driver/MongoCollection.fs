@@ -15,107 +15,182 @@
 
 namespace FSharp.MongoDB.Driver
 
-open System.Collections
-open System.Collections.Generic
+open System
+open System.Text
+open System.Threading
+
+open FSharp.Control
 
 open MongoDB.Bson
+open MongoDB.Bson.IO
 open MongoDB.Bson.Serialization
 
-open MongoDB.Driver.Core
-open MongoDB.Driver.Core.Protocol
-open MongoDB.Driver.Core.Protocol.Messages
+open MongoDB.Driver
+open MongoDB.Driver.Core.Bindings
+open MongoDB.Driver.Core.Clusters
+open MongoDB.Driver.Core.Operations
+open MongoDB.Driver.Core.WireProtocol.Messages.Encoders
 
-[<Interface>]
-type IMongoCollection<'DocType> =
-    inherit IEnumerable<'DocType>
+open FSharp.MongoDB.Driver.Operations
+open FSharp.MongoDB.Driver.Operations.CollectionReadOptions
 
-    abstract member Drop : unit -> CommandResult
+type internal NonOptionalMongoCollectionSettings =
+    { AssignIdOnInsert : bool
+      GuidRepresentation : GuidRepresentation
+      ReadEncoding : UTF8Encoding
+      ReadPreference : ReadPreference
+      WriteConcern : WriteConcern
+      WriteEncoding : UTF8Encoding }
 
-    abstract member Insert : 'DocType -> WriteConcernResult
+type internal MongoCollection<'Document>(database:IMongoDatabase,
+                                         collectionNamespace:CollectionNamespace,
+                                         settings:NonOptionalMongoCollectionSettings,
+                                         operationExecutor:IOperationExecutor) =
 
-    abstract member Find : unit -> Scope<'DocType>
+    let cluster = database.Client.Cluster
 
-    abstract member Find : 'DocTypeOrExample -> Scope<'DocType>
+    let messageEncoderSettings =
+        let add name value (messageEncoderSettings:MessageEncoderSettings) =
+            messageEncoderSettings.Add(name, value)
 
-    abstract member Save : 'DocType -> WriteConcernResult
+        MessageEncoderSettings()
+        |> add MessageEncoderSettingsName.GuidRepresentation settings.GuidRepresentation
+        |> add MessageEncoderSettingsName.ReadEncoding settings.ReadEncoding
+        |> add MessageEncoderSettingsName.WriteEncoding settings.WriteEncoding
 
-type MongoCollection<'DocType> =
+    interface IMongoCollection<'Document> with
 
-    val private backbone : MongoBackbone
-    val private db : string
-    val private clctn : string
+        member __.Database = database
 
-    internal new (backbone, db, clctn) = {
-        backbone = backbone
-        db = db
-        clctn = clctn
-    }
+        member __.CollectionNamespace = collectionNamespace
 
-    interface IMongoCollection<'DocType> with
-        member x.Drop () = x.backbone.DropCollection x.db x.clctn
+        member __.WithReadPreference readPreference =
+            let newSettings = { settings with ReadPreference = readPreference }
 
-        member x.Insert doc =
-            let options = Scope.DefaultOptions.writeOptions
+            MongoCollection<'Document>(database,
+                                       collectionNamespace,
+                                       newSettings,
+                                       operationExecutor)
+            :> IMongoCollection<'Document>
 
-            let flags = InsertFlags.None
-            let settings = { Operation.DefaultSettings.insert with WriteConcern = Some options.WriteConcern }
+        member __.AsyncAggregate<'Result> (pipeline, ?options, ?cancellationToken) =
+            let opts = defaultArg options AggregateOptions.None
+            let token = defaultArg cancellationToken Async.DefaultCancellationToken
 
-            x.backbone.Insert x.db x.clctn doc flags settings
+            let resultSerializer = BsonSerializer.SerializerRegistry.GetSerializer<'Result>()
+            let operation = AggregateOperation<'Result>(collectionNamespace,
+                                                        pipeline,
+                                                        resultSerializer,
+                                                        messageEncoderSettings)
 
-        member x.Find () =
-             (x :> IMongoCollection<'DocType>).Find(BsonDocument())
+            opts.AllowDiskUse
+            |> Option.iter (fun allowDiskUse -> operation.AllowDiskUse <- Nullable allowDiskUse)
 
-        member x.Find (query0 : 'DocTypeOrExample) =
-            let query = (box query0).ToBsonDocument(query0.GetType())
+            opts.BatchSize
+            |> Option.iter (fun batchSize -> operation.BatchSize <- Nullable batchSize)
 
-            {
-                Backbone = x.backbone
-                Database = x.db
-                Collection = x.clctn
+            opts.MaxTime
+            |> Option.iter (fun maxTime -> operation.MaxTime <- Nullable maxTime)
 
-                Query = Some query
-                Project = None
-                Sort = None
+            opts.UseCursor
+            |> Option.iter (fun useCursor -> operation.UseCursor <- Nullable useCursor)
 
-                Limit = 0
-                Skip = 0
+            use binding = new ReadPreferenceBinding(cluster, settings.ReadPreference)
+            operation
+            |> operationExecutor.AsyncExecuteCursorReadOperation binding token
 
-                QueryOptions = Scope.DefaultOptions.queryOptions
-                ReadPreference = ReadPreference.Primary
-                WriteOptions = Scope.DefaultOptions.writeOptions
-            }
+        member __.AsyncCount (filter, ?options, ?cancellationToken) =
+            let opts = defaultArg options CountOptions.None
+            let token = defaultArg cancellationToken Async.DefaultCancellationToken
 
-        member x.Save doc =
-            let options = Scope.DefaultOptions.writeOptions
+            let operation = CountOperation(collectionNamespace, messageEncoderSettings)
+            operation.Filter <- filter
 
-            let idProvider =
-                match BsonSerializer.LookupSerializer(doc.GetType()) with
-                | :? IBsonIdProvider as x -> x
-                | _ -> failwithf "could not find id provider for document type %O" <| doc.GetType()
+            opts.Hint
+            |> Option.iter (function
+                | IndexName idxName -> operation.Hint <- BsonString idxName
+                | IndexSpec idxSpec -> operation.Hint <- idxSpec)
 
-            let id = ref null
-            let idType = ref null
-            let idGenerator = ref null
+            opts.Limit
+            |> Option.iter (fun limit -> operation.Limit <- Nullable limit)
 
-            if idProvider.GetDocumentId(doc, id, idType, idGenerator) then // document has an id
-                // Perform an upsert
-                let query = BsonDocument("_id", BsonValue.Create(!id))
-                let update = doc
+            opts.MaxTime
+            |> Option.iter (fun maxTime -> operation.MaxTime <- Nullable maxTime)
 
-                let flags = UpdateFlags.Upsert
-                let settings = { Operation.DefaultSettings.update with WriteConcern = Some options.WriteConcern }
+            opts.Skip
+            |> Option.iter (fun skip -> operation.Skip <- Nullable skip)
 
-                x.backbone.Update x.db x.clctn query update flags settings
-            else                                                           // document does not have an id
-                // Perform an insert
-                let flags = InsertFlags.None
-                let settings = { Operation.DefaultSettings.insert with WriteConcern = Some options.WriteConcern
-                                                                       AssignIdOnInsert = Some true}
+            use binding = new ReadPreferenceBinding(cluster, settings.ReadPreference)
+            operation
+            |> operationExecutor.AsyncExecuteReadOperation binding token
 
-                x.backbone.Insert x.db x.clctn doc flags settings
+        member __.AsyncDistinct<'Result> (fieldName, filter, ?options, ?cancellationToken) =
+            let opts = defaultArg options DistinctOptions.None
+            let token = defaultArg cancellationToken Async.DefaultCancellationToken
 
-    interface IEnumerable<'DocType> with
-        member x.GetEnumerator() = (x :> IMongoCollection<'DocType>).Find().Get()
+            let resultSerializer = BsonSerializer.SerializerRegistry.GetSerializer<'Result>()
+            let operation = DistinctOperation<'Result>(collectionNamespace,
+                                                       resultSerializer,
+                                                       fieldName,
+                                                       messageEncoderSettings)
+            operation.Filter <- filter
 
-    interface IEnumerable with
-        member x.GetEnumerator() = (x :> IEnumerable<'DocType>).GetEnumerator() :> IEnumerator
+            opts.MaxTime
+            |> Option.iter (fun maxTime -> operation.MaxTime <- Nullable maxTime)
+
+            use binding = new ReadPreferenceBinding(cluster, settings.ReadPreference)
+            operation
+            |> operationExecutor.AsyncExecuteCursorReadOperation binding token
+
+        member coll.AsyncFind (filter, ?options:FindOptions, ?cancellationToken) =
+            let opts = defaultArg options FindOptions.None
+            let token = defaultArg cancellationToken Async.DefaultCancellationToken
+            (coll :> IMongoCollection<'Document>).AsyncFind<'Document> (filter, opts, token)
+
+        member __.AsyncFind<'Projection> (filter, ?options:FindOptions, ?cancellationToken) =
+            let opts = defaultArg options FindOptions.None
+            let token = defaultArg cancellationToken Async.DefaultCancellationToken
+
+            let resultSerializer = BsonSerializer.SerializerRegistry.GetSerializer<'Projection>()
+            let operation = FindOperation(collectionNamespace,
+                                          resultSerializer,
+                                          messageEncoderSettings)
+            operation.Filter <- filter
+
+            opts.AllowPartialResults
+            |> Option.iter (fun allowPartialResults ->
+                operation.AllowPartialResults <- allowPartialResults)
+
+            opts.BatchSize
+            |> Option.iter (fun batchSize -> operation.BatchSize <- Nullable batchSize)
+
+            opts.Comment
+            |> Option.iter (fun comment -> operation.Comment <- comment)
+
+            opts.CursorType
+            |> Option.iter (fun cursorType -> operation.CursorType <- cursorType)
+
+            opts.Limit
+            |> Option.iter (fun limit -> operation.Limit <- Nullable limit)
+
+            opts.MaxTime
+            |> Option.iter (fun maxTime -> operation.MaxTime <- Nullable maxTime)
+
+            opts.Modifiers
+            |> Option.iter (fun modifiers -> operation.Modifiers <- modifiers)
+
+            opts.NoCursorTimeout
+            |> Option.iter (fun noCursorTimeout -> operation.NoCursorTimeout <- noCursorTimeout)
+
+            opts.Projection
+            |> Option.iter (fun projection -> operation.Projection <- projection)
+
+            opts.Skip
+            |> Option.iter (fun skip -> operation.Skip <- Nullable skip)
+
+            opts.Sort
+            |> Option.iter (fun sort -> operation.Sort <- sort)
+
+            use binding = new ReadPreferenceBinding(cluster, settings.ReadPreference)
+            operation
+            |> operationExecutor.AsyncExecuteCursorReadOperation binding token

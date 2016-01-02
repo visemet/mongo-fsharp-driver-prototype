@@ -54,6 +54,9 @@
     <Compile Include="DatabaseWriteOptions.fs" />
     <Compile Include="MongoInterfaces.fsi" />
     <Compile Include="MongoInterfaces.fs" />
+    <Compile Include="IOperationExecutor.fs" />
+    <Compile Include="OperationExecutor.fs" />
+    <Compile Include="MongoCollection.fs" />
     <None Include="paket.references" />
   </ItemGroup>
   <ItemGroup>
