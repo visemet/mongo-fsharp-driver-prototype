@@ -41,11 +41,11 @@ type UnionCaseConvention() =
         match (typ, typ.DeclaringType) with
         | (IsUnion _, IsUnion unionTyp) ->
             // Get the union case corresponding to the nested type of the discriminated union.
-            FSharpType.GetUnionCases unionTyp
+            FSharpType.GetUnionCases(unionTyp, bindingFlags)
             |> Array.tryFind (fun unionCase -> unionCase.Name = typ.Name)
         | (IsUnion unionTyp, _) ->
             // Get the only union case of the singleton discriminated union.
-            FSharpType.GetUnionCases unionTyp
+            FSharpType.GetUnionCases(unionTyp, bindingFlags)
             |> (function [| unionCase |] -> Some unionCase | _ -> None)
         | _ -> None
 
@@ -74,7 +74,7 @@ type UnionCaseConvention() =
         classMap.SetDiscriminatorIsRequired true
 
         // Map the constructor of the union case.
-        let ctor = FSharpValue.PreComputeUnionConstructorInfo unionCase
+        let ctor = FSharpValue.PreComputeUnionConstructorInfo(unionCase, bindingFlags)
         let del = Delegate.CreateDelegate(mkDelegate ctor, ctor)
         classMap.MapCreator(del, names) |> ignore
 

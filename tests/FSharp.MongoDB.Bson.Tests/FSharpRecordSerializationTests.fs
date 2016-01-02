@@ -57,3 +57,25 @@ module FSharpRecordSerialization =
                          Float = 1.0 }
 
         test <@ %result = expected @>
+
+    module BindingFlags =
+
+        type internal InternalRecord = { Field : int }
+
+        [<Test>]
+        let ``test serialize an internal record type``() =
+            let value = { Field = 0 }
+
+            let result = <@ serialize value @>
+            let expected = BsonDocument("Field", BsonInt32 0)
+
+            test <@ %result = expected @>
+
+        [<Test>]
+        let ``test deserialize an internal record type``() =
+            let doc = BsonDocument("Field", BsonInt32 1)
+
+            let result = <@ deserialize doc typeof<InternalRecord> @>
+            let expected = { Field = 1 }
+
+            test <@ %result = expected @>

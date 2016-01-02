@@ -21,6 +21,8 @@ open Microsoft.FSharp.Reflection
 /// Convenience functions for interacting with F# types.
 module private Helpers =
 
+    let bindingFlags = BindingFlags.Public ||| BindingFlags.NonPublic
+
     /// <summary>
     /// Returns <c>Some typ</c> when <c>pred typ</c> returns true, and <c>None</c> when
     /// <c>pred typ</c> returns false.
@@ -33,7 +35,7 @@ module private Helpers =
     /// Returns <c>Some typ</c> when <c>typ</c> is a record type, and <c>None</c> otherwise.
     /// </summary>
     let (|IsRecord|_|) typ =
-        let isRecord typ = typ <> null && FSharpType.IsRecord typ
+        let isRecord typ = typ <> null && FSharpType.IsRecord(typ, bindingFlags)
         whenType isRecord typ
 
     /// <summary>
@@ -41,7 +43,7 @@ module private Helpers =
     /// particular union case, and <c>None</c> otherwise.
     /// </summary>
     let (|IsUnion|_|) (typ:System.Type) =
-        let isUnion typ = typ <> null && FSharpType.IsUnion typ
+        let isUnion typ = typ <> null && FSharpType.IsUnion(typ, bindingFlags)
         whenType isUnion typ
 
     /// <summary>

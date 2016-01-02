@@ -273,3 +273,47 @@ module FSharpUnionSerialization =
             let expected = Only3.Case (1, 2, 3)
 
             test <@ %result = expected @>
+
+    module BindingFlags =
+
+        type internal InternalUnion =
+           | Null
+           | NonNull of int
+
+        [<Test>]
+        let ``test serialize an internal null union case``() =
+            let value = Null
+
+            let result = <@ serialize value @>
+            let expected = BsonDocument("_t", BsonString "Null")
+
+            test <@ %result = expected @>
+
+        [<Test>]
+        let ``test deserialize an internal null union case``() =
+            let doc = BsonDocument("_t", BsonString "Null")
+
+            let result = <@ deserialize doc typeof<InternalUnion> @>
+            let expected = Null
+
+            test <@ %result = expected @>
+
+        [<Test>]
+        let ``test serialize an internal non-null union case``() =
+            let value = NonNull 0
+
+            let result = <@ serialize value @>
+            let expected = BsonDocument([ BsonElement("_t", BsonString "NonNull")
+                                          BsonElement("Item", BsonInt32 0) ])
+
+            test <@ %result = expected @>
+
+        [<Test>]
+        let ``test deserialize an internal non-null union case``() =
+            let doc = BsonDocument([ BsonElement("_t", BsonString "NonNull")
+                                     BsonElement("Item", BsonInt32 1) ])
+
+            let result = <@ deserialize doc typeof<InternalUnion> @>
+            let expected = NonNull 1
+
+            test <@ %result = expected @>

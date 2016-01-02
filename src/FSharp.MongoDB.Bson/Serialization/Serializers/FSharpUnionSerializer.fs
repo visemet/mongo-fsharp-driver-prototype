@@ -32,7 +32,7 @@ type FSharpUnionSerializer<'T>() =
 
     let typ = typeof<'T>
     let unionCases =
-        FSharpType.GetUnionCases typ
+        FSharpType.GetUnionCases(typ, bindingFlags)
         |> Seq.map (fun unionCase -> (unionCase.Name, unionCase))
         |> dict
 
@@ -51,7 +51,7 @@ type FSharpUnionSerializer<'T>() =
             |> Seq.take 1
             |> Seq.map (fun caseName -> (caseName, mkClassMapSerializer typ))
         else
-            typ.GetNestedTypes()
+            typ.GetNestedTypes bindingFlags
             |> Seq.filter ((|IsUnion|_|) >> Option.isSome)
             |> Seq.map (fun caseType -> (caseType.Name, mkClassMapSerializer caseType))
         |> dict
@@ -68,7 +68,7 @@ type FSharpUnionSerializer<'T>() =
 
     override __.Serialize (context, args, value) =
         let writer = context.Writer
-        let (unionCase, fields) = FSharpValue.GetUnionFields(value, typ)
+        let (unionCase, fields) = FSharpValue.GetUnionFields(value, typ, bindingFlags)
 
         match fields with
         | [| |] ->
@@ -93,7 +93,7 @@ type FSharpUnionSerializer<'T>() =
         | [| |] ->
             // Handle when `typ` is a null union case, i.e. the union case has no fields.
             reader.ReadEndDocument()
-            FSharpValue.MakeUnion(unionCase, [| |]) :?> 'T
+            FSharpValue.MakeUnion(unionCase, [| |], bindingFlags) :?> 'T
         | _ ->
             // Otherwise, defer deserialization to the class map.
             reader.ReturnToBookmark mark
