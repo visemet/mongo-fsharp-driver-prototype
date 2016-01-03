@@ -1,40 +1,54 @@
-MongoDB F# Driver Prototype
-===========================
+FSharp.MongoDB
+==============
 
-This is a prototype MongoDB driver written for F#. The goal of this
-driver is to make using MongoDB from F# more natural by defining new
-ways to express database/collection operations that are idiomatic to
-the language.
+> an F# interface for the MongoDB .NET driver
 
-#### Special Notes
+**Disclaimer.** This is an experimental project being maintained in my _infinite free time_. It is
+in no way supported by MongoDB, Inc., and probably shouldn't be used in production.
 
-The API and implementation are currently subject to change at any time.
-You **must not** use this driver in production, as it is still under
-development and is in no way supported by MongoDB, Inc.
+### Goals of this project
 
-We absolutely encourage you to experiment with it and provide us
-feedback on the API, design, and implementation. Bug reports and
-suggestions for improvements are welcomed, as are pull requests.
+  * Provide an idiomatic F# API for interacting with MongoDB.
+  * Have an implementation that is fully testable without connecting to a server.
 
-Dependencies
-------------
+### Non-goals of this project
 
-  * F# 3.0
+  * Have feature parity with the [C# driver][csharp_driver].
 
 Building
 --------
 
-The F# driver has been developed on top of the refactored [Core .NET
-driver](https://github.com/mongodb/mongo-csharp-driver/tree/v2.0).
-This new ***Core .Net driver*** is still in development as well, and
-hence unavailable on NuGet. Thus, the branch has been setup as a
-submodule. This is intended to change in the future.
+  - Simply build the `FSharpDriver-2012.sln` solution in Visual Studio, Xamarin Studio, or Mono
+    Develop. You can also run the FAKE script
 
-    git submodule update --init
-    <compile mongo-csharp-driver>
-    <compile mongo-fsharp-driver-prototype>
+      * `build.cmd` on Windows.
+      * `build.sh` on Linux or OS X.
+
+### Supported F# runtimes
+
+  - FSharp.Core v4.3.0.0 (F# 3.0)
+  - FSharp.Core v4.3.1.0 (F# 3.1)
+  - FSharp.Core v4.4.0.0 (F# 4.0)
+
+### Supported platforms
+
+  - .NET Framework 4.5
+
+Contributing
+------------
+
+  - If you have a question about the library, then create an [issue][issues] with the `question`
+    label.
+  - If you'd like to report a bug or submit a feature request, then create an [issue][issues] with
+    the appropriate label.
+  - If you'd like to contribute, then feel free to send a [pull request][pull_requests].
 
 License
 -------
 
-[Apache v2.0](LICENSE)
+The contents of this library are made available under the [Apache License, Version 2.0][license].
+
+  [csharp_driver]: https://github.com/mongodb/mongo-csharp-driver
+  [issues]:        https://github.com/visemet/FSharp.MongoDB/issues
+  [license]:       LICENSE
+  [pull_requests]: https://github.com/visemet/FSharp.MongoDB/pulls
