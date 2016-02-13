@@ -1,4 +1,4 @@
-﻿(* Copyright (c) 2013 MongoDB, Inc.
+﻿(* Copyright (c) 2016 MongoDB, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,15 @@
  * limitations under the License.
  *)
 
-namespace FSharp.MongoDB.Driver
+namespace FSharp.MongoDB.Bson
 
 open System.Reflection
 open System.Runtime.CompilerServices
 
-[<assembly: AssemblyTitle("FSharp.MongoDB.Driver")>]
-[<assembly: AssemblyProduct("FSharp.MongoDB.Driver")>]
-[<assembly: AssemblyDescription("An F# interface for the MongoDB .NET driver.")>]
+[<assembly: AssemblyTitle("FSharp.MongoDB.Bson")>]
+[<assembly: AssemblyProduct("FSharp.MongoDB.Bson")>]
+[<assembly: AssemblyDescription("BSON serialization library for F# data types.")>]
 [<assembly: AssemblyVersion("0.0.0.0")>]
 [<assembly: AssemblyFileVersion("0.0.0.0")>]
-
-[<assembly: InternalsVisibleTo("FSharp.MongoDB.Driver.Tests")>]
 
 do ()
