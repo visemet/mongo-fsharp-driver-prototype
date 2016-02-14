@@ -21,8 +21,8 @@ open System.Runtime.CompilerServices
 [<assembly: AssemblyTitle("FSharp.MongoDB.Driver")>]
 [<assembly: AssemblyProduct("FSharp.MongoDB.Driver")>]
 [<assembly: AssemblyDescription("An F# interface for the MongoDB .NET driver.")>]
-[<assembly: AssemblyVersion("0.0.0.0")>]
-[<assembly: AssemblyFileVersion("0.0.0.0")>]
+[<assembly: AssemblyVersion("0.0.1.0")>]
+[<assembly: AssemblyFileVersion("0.0.1.0")>]
 
 [<assembly: InternalsVisibleTo("FSharp.MongoDB.Driver.Tests")>]
 
