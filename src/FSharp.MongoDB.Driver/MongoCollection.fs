@@ -83,21 +83,13 @@ type internal MongoCollection<'Document>(database:IMongoDatabase,
                                                         resultSerializer,
                                                         messageEncoderSettings)
 
-            opts.AllowDiskUse
-            |> Option.iter (fun allowDiskUse -> operation.AllowDiskUse <- Nullable allowDiskUse)
-
-            opts.BatchSize
-            |> Option.iter (fun batchSize -> operation.BatchSize <- Nullable batchSize)
-
-            opts.MaxTime
-            |> Option.iter (fun maxTime -> operation.MaxTime <- Nullable maxTime)
-
-            opts.UseCursor
-            |> Option.iter (fun useCursor -> operation.UseCursor <- Nullable useCursor)
+            operation.AllowDiskUse <- Option.toNullable opts.AllowDiskUse
+            operation.BatchSize <- Option.toNullable opts.BatchSize
+            operation.MaxTime <- Option.toNullable opts.MaxTime
+            operation.UseCursor <- Option.toNullable opts.UseCursor
 
             use binding = new ReadPreferenceBinding(cluster, settings.ReadPreference)
-            operation
-            |> operationExecutor.AsyncExecuteCursorReadOperation binding token
+            operationExecutor.AsyncExecuteCursorReadOperation binding token operation
 
         member __.AsyncCount (filter, ?options, ?cancellationToken) =
             let opts = defaultArg options CountOptions.None
@@ -111,18 +103,12 @@ type internal MongoCollection<'Document>(database:IMongoDatabase,
                 | IndexName idxName -> operation.Hint <- BsonString idxName
                 | IndexSpec idxSpec -> operation.Hint <- idxSpec)
 
-            opts.Limit
-            |> Option.iter (fun limit -> operation.Limit <- Nullable limit)
-
-            opts.MaxTime
-            |> Option.iter (fun maxTime -> operation.MaxTime <- Nullable maxTime)
-
-            opts.Skip
-            |> Option.iter (fun skip -> operation.Skip <- Nullable skip)
+            operation.Limit <- Option.toNullable opts.Limit
+            operation.MaxTime <- Option.toNullable opts.MaxTime
+            operation.Skip <- Option.toNullable opts.Skip
 
             use binding = new ReadPreferenceBinding(cluster, settings.ReadPreference)
-            operation
-            |> operationExecutor.AsyncExecuteReadOperation binding token
+            operationExecutor.AsyncExecuteReadOperation binding token operation
 
         member __.AsyncDistinct<'Result> (fieldName, filter, ?options, ?cancellationToken) =
             let opts = defaultArg options DistinctOptions.None
@@ -134,9 +120,7 @@ type internal MongoCollection<'Document>(database:IMongoDatabase,
                                                        fieldName,
                                                        messageEncoderSettings)
             operation.Filter <- filter
-
-            opts.MaxTime
-            |> Option.iter (fun maxTime -> operation.MaxTime <- Nullable maxTime)
+            operation.MaxTime <- Option.toNullable opts.MaxTime
 
             use binding = new ReadPreferenceBinding(cluster, settings.ReadPreference)
             operation
@@ -156,13 +140,8 @@ type internal MongoCollection<'Document>(database:IMongoDatabase,
                                           resultSerializer,
                                           messageEncoderSettings)
             operation.Filter <- filter
-
-            opts.AllowPartialResults
-            |> Option.iter (fun allowPartialResults ->
-                operation.AllowPartialResults <- allowPartialResults)
-
-            opts.BatchSize
-            |> Option.iter (fun batchSize -> operation.BatchSize <- Nullable batchSize)
+            operation.AllowPartialResults <- Option.toNullable opts.AllowPartialResults
+            operation.BatchSize <- Option.toNullable opts.BatchSize
 
             opts.Comment
             |> Option.iter (fun comment -> operation.Comment <- comment)
@@ -170,23 +149,18 @@ type internal MongoCollection<'Document>(database:IMongoDatabase,
             opts.CursorType
             |> Option.iter (fun cursorType -> operation.CursorType <- cursorType)
 
-            opts.Limit
-            |> Option.iter (fun limit -> operation.Limit <- Nullable limit)
-
-            opts.MaxTime
-            |> Option.iter (fun maxTime -> operation.MaxTime <- Nullable maxTime)
+            operation.Limit <- Option.toNullable opts.Limit
+            operation.MaxTime <- Option.toNullable opts.MaxTime
 
             opts.Modifiers
             |> Option.iter (fun modifiers -> operation.Modifiers <- modifiers)
 
-            opts.NoCursorTimeout
-            |> Option.iter (fun noCursorTimeout -> operation.NoCursorTimeout <- noCursorTimeout)
+            operation.NoCursorTimeout <- Option.toNullable opts.NoCursorTimeout
 
             opts.Projection
             |> Option.iter (fun projection -> operation.Projection <- projection)
 
-            opts.Skip
-            |> Option.iter (fun skip -> operation.Skip <- Nullable skip)
+            operation.Skip <- Option.toNullable opts.Skip
 
             opts.Sort
             |> Option.iter (fun sort -> operation.Sort <- sort)

@@ -214,14 +214,14 @@ module CollectionReadOperations =
             | CursorReadOperation (readPref, (:? FindOperation<BsonDocument> as op)) ->
                 test <@ op.CollectionNamespace = coll.CollectionNamespace @>
                 test <@ op.Filter = filter @>
-                test <@ op.AllowPartialResults = options.AllowPartialResults.Value @>
+                test <@ op.AllowPartialResults.Value = options.AllowPartialResults.Value @>
                 test <@ op.BatchSize.Value = options.BatchSize.Value @>
                 test <@ op.Comment = options.Comment.Value @>
                 test <@ op.CursorType = options.CursorType.Value @>
                 test <@ op.Limit.Value = options.Limit.Value @>
                 test <@ op.MaxTime.Value = options.MaxTime.Value @>
                 test <@ op.Modifiers = options.Modifiers.Value @>
-                test <@ op.NoCursorTimeout = options.NoCursorTimeout.Value @>
+                test <@ op.NoCursorTimeout.Value = options.NoCursorTimeout.Value @>
                 test <@ op.Projection = options.Projection.Value @>
                 test <@ op.Skip.Value = options.Skip.Value @>
                 test <@ op.Sort = options.Sort.Value @>

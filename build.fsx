@@ -164,7 +164,7 @@ Target "NuGet" <| fun () ->
 // Generate the documentation
 
 Target "GenerateDocs" <| fun () ->
-    executeFSIWithArgs "docs/tools" "generate.fsx" ["--define:RELEASE"] []
+    executeFSIWithArgs "docs/output" "generate.fsx" ["--define:RELEASE"] []
     |> ignore
 
 // -----------------------------------------------------------------------------

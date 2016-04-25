@@ -33,6 +33,8 @@ type DummyCluster() =
 
         member __.Initialize() = invalidOp "not implemented"
 
+        member __.SelectServer(_, _) = invalidOp "not implemented"
+        
         member __.SelectServerAsync(_, _) = invalidOp "not implemented"
 
         member __.Dispose() = invalidOp "not implemented"

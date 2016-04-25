@@ -90,24 +90,15 @@ type internal MongoDatabase(client:IMongoClient,
             let collectionNamespace = CollectionNamespace(databaseNamespace, name)
             let operation = CreateCollectionOperation(collectionNamespace, messageEncoderSettings)
 
-            createCollectionOptions.AutoIndexId
-            |> Option.iter (fun autoIndexId -> operation.AutoIndexId <- Nullable autoIndexId)
-
-            createCollectionOptions.Capped
-            |> Option.iter (fun capped -> operation.Capped <- Nullable capped)
-
-            createCollectionOptions.MaxDocuments
-            |> Option.iter (fun maxDocuments -> operation.MaxDocuments <- Nullable maxDocuments)
-
-            createCollectionOptions.MaxSize
-            |> Option.iter (fun maxSize -> operation.MaxSize <- Nullable maxSize)
+            operation.AutoIndexId <- Option.toNullable createCollectionOptions.AutoIndexId
+            operation.Capped <- Option.toNullable createCollectionOptions.Capped
+            operation.MaxDocuments <- Option.toNullable createCollectionOptions.MaxDocuments
+            operation.MaxSize <- Option.toNullable createCollectionOptions.MaxSize
 
             createCollectionOptions.StorageEngine
             |> Option.iter (fun storageEngine -> operation.StorageEngine <- storageEngine)
 
-            createCollectionOptions.UsePowerOf2Sizes
-            |> Option.iter (fun usePowerOf2Sizes ->
-                operation.UsePowerOf2Sizes <- Nullable usePowerOf2Sizes)
+            operation.UsePowerOf2Sizes <- Option.toNullable createCollectionOptions.UsePowerOf2Sizes
 
             use binding = new WritableServerBinding(client.Cluster)
             operation
@@ -148,8 +139,7 @@ type internal MongoDatabase(client:IMongoClient,
                                                       newCollectionNamespace,
                                                       messageEncoderSettings)
 
-            renameCollectionOptions.DropTarget
-            |> Option.iter (fun dropTarget -> operation.DropTarget <- Nullable dropTarget)
+            operation.DropTarget <- Option.toNullable renameCollectionOptions.DropTarget
 
             use binding = new WritableServerBinding(client.Cluster)
             operation
