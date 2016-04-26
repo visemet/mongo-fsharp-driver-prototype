@@ -31,3 +31,6 @@ packages/
 
 # IntelliJ Idea
 .idea/
+
+# ReSharper
+_ReSharper.Caches
