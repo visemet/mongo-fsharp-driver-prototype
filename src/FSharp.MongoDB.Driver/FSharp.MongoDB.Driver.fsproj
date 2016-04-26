@@ -91,6 +91,7 @@
     <Copy SourceFiles="$(ProjectDir)$(OutDir)MongoDB.Bson.dll" DestinationFolder="$(ProjectDir)..\..\bin" />
     <Copy SourceFiles="$(ProjectDir)$(OutDir)MongoDB.Driver.Core.dll" DestinationFolder="$(ProjectDir)..\..\bin" />
   </Target>
+  <Import Project="..\..\.paket\paket.targets" />
   <Choose>
     <When Condition="$(TargetFrameworkIdentifier) == '.NETFramework' And $(TargetFrameworkVersion) == 'v4.5'">
       <ItemGroup>
