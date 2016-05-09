@@ -1,5 +1,4 @@
 FSharp.Control.AsyncSeq
-MongoDB.Bson
 MongoDB.Driver.Core
 NUnit
 NUnit.Runners
