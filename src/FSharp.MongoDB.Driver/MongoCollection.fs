@@ -159,7 +159,7 @@ type internal MongoCollection<'Document>(database:IMongoDatabase,
 
             opts.AllowPartialResults
             |> Option.iter (fun allowPartialResults ->
-                operation.AllowPartialResults <- Nullable allowPartialResults)
+                operation.AllowPartialResults <- allowPartialResults)
 
             opts.BatchSize
             |> Option.iter (fun batchSize -> operation.BatchSize <- Nullable batchSize)
@@ -180,7 +180,7 @@ type internal MongoCollection<'Document>(database:IMongoDatabase,
             |> Option.iter (fun modifiers -> operation.Modifiers <- modifiers)
 
             opts.NoCursorTimeout
-            |> Option.iter (fun noCursorTimeout -> operation.NoCursorTimeout <- Nullable noCursorTimeout)
+            |> Option.iter (fun noCursorTimeout -> operation.NoCursorTimeout <- noCursorTimeout)
 
             opts.Projection
             |> Option.iter (fun projection -> operation.Projection <- projection)
